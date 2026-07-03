@@ -1,180 +1,129 @@
 import './scss/styles.scss';
 
-// ТЕСТИРОВАНИЕ
-
 import { IProduct, IBuyer, TPayment } from './types/index';
+
 import { Products } from './components/models/Products';
-import { Cart } from './components//models/Cart';
+import { Cart } from './components/models/Cart';
 import { Buyer } from './components/models/Buyer';
+import { apiProducts } from './utils/data';
 
+//ТЕСТИРОВАНИЕ
 
-const testProduct: IProduct = {
-  id: '123',
-  title: 'Футболка "TypeScript"',
-  description: 'Мягкая, удобная, с принтом',
-  image: 'https://example.com/tshirt.png',
-  category: 'Одежда',
-  price: 1500,
-};
-
-const testBuyer: IBuyer = {
-  payment: 'card',
-  email: 'user@example.com',
-  phone: '+79990000000',
-  address: 'Москва, ул. Пушкина, д. Колотушкина',
-};
-
-console.log('✅ Интерфейсы работают! Товар:', testProduct.title);
-console.log('✅ Покупатель:', testBuyer.email);
-
+console.log('=== Проверка моделей данных (с apiProducts) ===');
 
 // --- Тестирование Products ---
-const productsModel = new Products();
+console.log('📦 ТЕСТ Products');
+const productsModel = new Products();  // создаем экземпляр Products
 
-// 1. Сначала проверим пустой массив
-console.log('📦 Пустая корзина товаров:', productsModel.getItems());
+console.log('1. Пустая модель:', productsModel.getItems()); 
 
-// 2. Теперь положим туда товары из тестовых данных
-import { apiProducts } from './utils/data';
-productsModel.setItems(apiProducts.items);
+productsModel.setItems(apiProducts.items);  // сохраняем массив поступивших данных
+console.log('2. После setItems:', productsModel.getItems().length, 'товаров'); // Должно совпадать с apiProducts.items.length
 
-// 3. Проверим, что они сохранились
-console.log('✅ Товары загружены:', productsModel.getItems().length, 'товаров');
-
-// 4. Проверим поиск по ID
 const firstProduct = productsModel.getItemById(apiProducts.items[0].id);
-console.log('🔍 Товар по ID:', firstProduct?.title);
+console.log('3. Товар по ID:', firstProduct?.title); // Должен вывести название первого товара
 
-// 5. Проверим работу с выбранным товаром
 productsModel.setSelectedItem(firstProduct ?? null);
-console.log('👀 Выбран товар:', productsModel.getSelectedItem()?.title);
+console.log('4. Выбранный товар:', productsModel.getSelectedItem()?.title);
 
 productsModel.setSelectedItem(null);
-console.log('❌ После сброса selectedItem:', productsModel.getSelectedItem());
+console.log('5. После сброса selectedItem:', productsModel.getSelectedItem()); // Должно быть null
+
+console.log(''); // пустая строка для разделения в консоли
 
 
-// --- Тест Cart ---
+// --- Тестирование Cart ---
+console.log('🛒 ТЕСТ Cart');
+const cart = new Cart(); // создаем экземпляр Cart
 
-const cart = new Cart();
-
-console.log('🛒 Пустая корзина, count:', cart.getCount()); // 0
-
-// Добавляем товары
 cart.addItem(apiProducts.items[0]);
 cart.addItem(apiProducts.items[1]);
 cart.addItem(apiProducts.items[0]); // Попытка добавить дубль
 
-console.log('Добавили товары в корзину. Корзина:', cart);
-console.log('✅ Дубль не добавлен, count:', cart.getCount()); // Должно быть 2
-console.log('📦 Товары в корзине:', cart.getItems().map(p => p.title));
+console.log('1. Количество товаров (дубль не должен добавиться):', cart.getCount()); // Должно быть 2
+console.log('2. Товары в корзине:', cart.getItems().map(product => product.title)); // перебираем товары в корзине и получаем их title
 
-// Проверка суммы
-console.log('💰 Сумма:', cart.getTotalPrice()); // Сумма двух товаров
+console.log('3. Стоимость каждого товара', cart.getItems().map(product => product.price)); // узнаем цену кажого товара (для наглядности)
 
-// Удаляем один товар
-cart.removeItem(apiProducts.items[0].id);
-console.log('✅ Товар удалён, count:', cart.getCount()); // Должно быть 1
-console.log('❌ Товар 0 больше не в корзине:', !cart.hasItem(apiProducts.items[0].id)); // true
+console.log('4. Сумма корзины:', cart.getTotalPrice()); // Сумма товаров
 
-// Очищаем корзину
-cart.clear();
-console.log('🗑️ Корзина очищена, count:', cart.getCount()); // 0
-console.log('🧺 Пустой массив:', cart.getItems().length === 0); // true
+console.log('5. Есть ли товар с id:', apiProducts.items[2].id, '- в корзине? Ответ:', cart.hasItem(apiProducts.items[2].id)); // false
 
+cart.removeItem(apiProducts.items[0].id); // удаляем товар из корзины
+console.log('6. После удаления товара ID 0, count:', cart.getCount()); // Должно быть 1
 
+cart.clear(); // очищаем корзину
+console.log('7. После clear, count:', cart.getCount()); // Должно быть 0
+
+console.log('');  // пустая строка для разделения в консоли
 
 
-// ТЕст Buyer
+// --- Тестирование Buyer ---
+console.log('🚀 ТЕСТ Buyer');
+const buyer = new Buyer(); // создаем экземпляр Buyer
 
-console.log('🚀 Запускаем полный тест класса Buyer\n');
-
-const buyer = new Buyer();
-
-// --- Тест 1: Проверяем дефолтное состояние сразу после new ---
-console.log('🧪 Тест 1: Дефолтные значения');
-const initialData = buyer.getData();
-console.log('Данные:', initialData);
-
+const initialData = buyer.getData(); // исходный объект
+console.log('1. Дефолтные значения:', initialData);
 if (initialData.payment === '' && initialData.address === '' &&
     initialData.phone === '' && initialData.email === '') {
-  console.log('✅ Дефолт верный: все поля пустые, payment = ""\n');
+  console.log('✅ Дефолт верный');
 } else {
-  console.error('❌ Ошибка: дефолтные значения не совпадают с ожидаемыми\n');
+  console.error('❌ Дефолт не совпадает');
 }
 
-// --- Тест 2: Частичное обновление (setData) ---
-console.log('🧪 Тест 2: setData (частичное обновление)');
+// Частичное обновление из данных, которые могли бы прийти из формы
 buyer.setData({
-  email: 'test@example.com',
+  email: 'hello@example.com',
   phone: '+79990000000',
 });
-
-const afterSet = buyer.getData();
-console.log('После setData:', afterSet);
-
-// Проверяем, что обновились только email и phone, а остальные остались пустыми
-if (afterSet.email === 'test@example.com' && afterSet.phone === '+79990000000' &&
+const afterSet = buyer.getData();  // получаем обновленный объект
+console.log('2. После setData:', afterSet);
+if (afterSet.email === 'hello@example.com' && afterSet.phone === '+79990000000' &&
     afterSet.address === '' && afterSet.payment === '') {
-  console.log('✅ setData работает: обновил только переданные поля\n');
+  console.log('✅ setData корректно обновил переданные поля и не тронул остальные');
 } else {
-  console.error('❌ Ошибка: setData изменил лишние поля или не обновил нужные\n');
+  console.error('❌ setData сработал некорректно: поля не обновились или изменились лишние');
 }
 
-// --- Тест 3: Валидация на частично заполненных данных ---
-console.log('🧪 Тест 3: validate (частично заполненные данные)');
 const errorsPartial = buyer.validate();
-console.log('Ошибки валидации:', errorsPartial);
-
-// Ожидаем ошибки по payment и address (они пустые), email и phone — ок
-const hasPaymentError = !!errorsPartial.payment;
-const hasAddressError = !!errorsPartial.address;
-const noEmailPhoneError = !errorsPartial.email && !errorsPartial.phone;
-
-if (hasPaymentError && hasAddressError && noEmailPhoneError) {
-  console.log('✅ Валидация ловит пустые обязательные поля (payment, address)\n');
+console.log('3. Ошибки валидации (частично заполнено):', errorsPartial);
+if (errorsPartial.payment && errorsPartial.address) {
+  console.log('✅ Валидация ловит пустые обязательные поля');
 } else {
-  console.error('❌ Валидация не отработала как ожидалось\n');
+  console.error('❌ Валидация не отработала');
 }
 
-// --- Тест 4: Заполняем всё и проверяем, что ошибок нет ---
-console.log('🧪 Тест 4: validate (все поля заполнены)');
+//Проверка на полное заполнение и корректности payment
+console.log('4. Полное заполнение и проверка валидации');
 buyer.setData({
   payment: 'cash',
   address: 'Москва, ул. Пушкина, д. 1',
 });
 
 const errorsAllFilled = buyer.validate();
-console.log('Ошибки после полного заполнения:', errorsAllFilled);
+const currentPayment = buyer.getData().payment;
+const validOptions : TPayment[] = ['card', 'cash'];
 
-if (Object.keys(errorsAllFilled).length === 0) {
-  console.log('✅ Валидация пройдена: ошибок нет\n');
+// Сначала смотрим, что вернула валидация
+if (Object.keys(errorsAllFilled).length > 0) {
+  // Случай 1: валидация нашла ошибки
+  console.error('❌ Валидация НЕ пройдена: найдены ошибки по полям:', errorsAllFilled);
+} else if (!validOptions.includes(currentPayment as TPayment)) {
+  // Случай 2: ошибок нет, но payment какой-то «левый»
+  console.error(`❌ Валидация НЕ пройдена: payment = "${currentPayment}" — недопустимое значение. Разрешены: ${validOptions.join(', ')}`);
 } else {
-  console.error('❌ Есть лишние ошибки валидации\n');
+  // Случай 3: всё ок
+  console.log(`✅ Валидация ПРОЙДЕНА: ошибок нет, payment = "${currentPayment}" корректен`);
 }
 
-// --- Тест 5: Сброс (clear) ---
-console.log('🧪 Тест 5: clear (сброс данных)');
 buyer.clear();
 const clearedData = buyer.getData();
-console.log('После clear:', clearedData);
-
+console.log('5. Данные после clear:', clearedData);
 if (clearedData.payment === '' && clearedData.address === '' &&
     clearedData.phone === '' && clearedData.email === '') {
-  console.log('✅ clear работает: все поля сброшены в начальное состояние\n');
+  console.log('✅ clear() сбросил все поля');
 } else {
-  console.error('❌ clear не сбросил все поля\n');
+  console.error('❌ clear() не сработал');
 }
 
-// --- Тест 6: Валидация сразу после сброса ---
-console.log('🧪 Тест 6: validate сразу после clear');
-const errorsAfterClear = buyer.validate();
-console.log('Ошибки после clear:', errorsAfterClear);
-
-if (errorsAfterClear.payment && errorsAfterClear.address &&
-    errorsAfterClear.phone && errorsAfterClear.email) {
-  console.log('✅ После clear валидация снова требует заполнить все поля\n');
-} else {
-  console.error('❌ После clear валидация не требует заполнения полей\n');
-}
-
-console.log('🎉 Все тесты завершены!');
+console.log('🎉 Ура! Все тесты пройдены!');

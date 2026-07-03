@@ -31,7 +31,7 @@ export class Buyer {
     }
   }
 
-  validate() : Record<keyof IBuyer, string> {
+  validate() : Partial<Record<keyof IBuyer, string>> {
     const errors: Partial<Record<keyof IBuyer, string>> = {};
     const { payment, address, phone, email } = this.data;  // деструктурируем
 
