@@ -16,8 +16,7 @@ export class Products {
   }
 
   getItemById(id: string): IProduct | undefined {
-    const itemId = this.items.find( (product) => product.id === id);
-    return itemId;
+    return this.items.find( (product) => product.id === id);
   }
     
   setSelectedItem(item: IProduct | null) : void {

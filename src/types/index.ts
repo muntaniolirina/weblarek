@@ -11,7 +11,10 @@ export interface IApi {
 }
 
 // Допустимые способы оплаты. Union тип
-export type TPayment = 'card' | 'cash' | '';
+export type TPayment = 'card' | 'cash'; // убрала ''
+
+// Интерфейс для ошибок валидации
+export interface BuyerValidationErrors extends Partial<Record<keyof IBuyer, string>> {}
 
 /** 
 * ТОВАР (Структура одного товара)
@@ -31,7 +34,7 @@ export interface IProduct {
 * Используется для валидации и заполнения формы.
 */
 export interface IBuyer {
-  payment: TPayment;
+  payment: TPayment | ''; //пуста ястрока допускается на уровне поля
   email: string;
   phone: string;
   address: string;
@@ -53,11 +56,7 @@ export interface IProductsResponse {
  * Формат строго соответствует тому, что ожидает сервер (из Postman).
  * items — это массив ID (строк), а не объектов товаров.
  */
-export interface IOrderRequest {
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
+export interface IOrderRequest extends IBuyer {
   total: number;         // общая сумма заказа
   items: string[];        // массив ID товаров, как в Postman
 }

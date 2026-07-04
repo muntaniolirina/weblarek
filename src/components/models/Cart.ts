@@ -18,8 +18,7 @@ export class Cart {
   }
 
   removeItem(id : string) : void {
-    const otherItems = this.items.filter( (product) => product.id !== id); // фильтруем товары которые не совпадают с переданным id -> получаем новый массив
-    this.items = otherItems; // переприсваиваем значение корзины
+    this.items = this.items.filter( (product) => product.id !== id); // фильтруем товары которые не совпадают с переданным id -> получаем новый массив
   }
 
   clear() : void {

@@ -1,4 +1,4 @@
-import { IBuyer } from "../../types/index";
+import { IBuyer, BuyerValidationErrors } from "../../types/index";
 
 // Покупатель
 // хранение, частичное обновление и валидацию данных покупателя перед оформлением заказа
@@ -31,24 +31,24 @@ export class Buyer {
     }
   }
 
-  validate() : Partial<Record<keyof IBuyer, string>> {
-    const errors: Partial<Record<keyof IBuyer, string>> = {};
+  validate() : BuyerValidationErrors {
+    const errors: BuyerValidationErrors = {};
     const { payment, address, phone, email } = this.data;  // деструктурируем
 
     // проверка payment - выбран тип оплаты (поле не пустое)
-    if( !payment || payment.trim() === '' ) {
+    if( !payment?.trim()) {
       errors.payment = 'Выберите тип оплаты';
     }
     // проверка адреса - не пустое поле
-    if( !address || address.trim() === '') {
+    if( !address?.trim()) {
       errors.address = 'Укажите адрес';
     }
     // проверка телефона - не пустое поле
-    if( !phone || phone.trim() === '') {
+    if( !phone?.trim()) {
       errors.phone = 'Укажите номер телефона';
     }
     // проверка email - не пустое поле
-    if( !email || email.trim() === '') {
+    if( !email?.trim()) {
       errors.email = 'Введите email';
     }
 
