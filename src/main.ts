@@ -1,13 +1,19 @@
 import './scss/styles.scss';
 
-import { IProduct, IBuyer, TPayment } from './types/index';
+import { TPayment } from './types/index';
 
 import { Products } from './components/models/Products';
 import { Cart } from './components/models/Cart';
 import { Buyer } from './components/models/Buyer';
 import { apiProducts } from './utils/data';
 
-//ТЕСТИРОВАНИЕ
+import { ApiService } from './components/services/ApiService';
+import { IApi } from './types/index';
+import { IProductsResponse } from './types/index';
+import { API_URL } from './utils/constants';
+import { ApiPostMethods } from './types/index';
+
+//--- ТЕСТИРОВАНИЕ ---
 
 console.log('=== Проверка моделей данных (с apiProducts) ===');
 
@@ -127,3 +133,43 @@ if (clearedData.payment === '' && clearedData.address === '' &&
 }
 
 console.log('🎉 Ура! Все тесты пройдены!');
+
+
+// --- ЗАПРОСЫ ---
+
+//Реализуем интерфейс IApi
+const realApiClient : IApi = {
+  async get<T>(uri: string): Promise<T> {
+
+    const url = `${API_URL}${uri}`;
+    const response = await fetch(url);
+
+    if(!response.ok) {
+      throw new Error(`Ошибка сети: ${response.status}`);
+    }
+
+    return (await response.json()) as T;
+  },
+  // эти параметры (_uri: string, _data: object, _method?: ApiPostMethods)сейчас не используются, но они нужен по сигнатуре интерфейса. Поэтому символ _
+  async post<T extends object>(_uri: string, _data: object, _method?: ApiPostMethods): Promise<T> {
+    throw new Error('Метод post еще не используется. Но требуется интерфейсом')
+  },
+};
+
+// создаем сервис
+const apiService = new ApiService(realApiClient);
+
+// создаем экземпляр каталога
+const catalog = new Products();  // Уже создавали ранее в тестах строка 22
+console.log('🚀 Начинаем загрузку каталога товаров...');
+
+// делаем запрос через ApiService
+apiService.getProducts()
+  .then( (response: IProductsResponse) => {
+    catalog.setItems(response.items) // сохраняем товары в модель каталога через метод setItems
+    
+    console.log('📦 Каталог сохранён в модели Products:', catalog.getItems()); 
+  })
+  .catch( (error) => {
+    console.error('Не удалось получить товары:', error);
+  })
