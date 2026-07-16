@@ -230,6 +230,8 @@ export interface IBuyer {
 `clear() : void` - очистка данных покупателя. Сбрасывает все даннные покупателя в начальное состояние (используется после успешной отправки заказа).  
 ` validate() : Partial<Record<keyof IBuyer, string>>` - выполняет валидацию полей (поле валидно если не пустое). Метод создает и возвращает объект с ошибками вида `{payment: 'Не выбран тип оплаты', email: 'Укажите email'}`, где ключи - названия полей IBuyer. Проверяет каждое поле на непустоту и формирует сообщения об ошибках по ключам интерфейса `IBuyer`. Возвращает пустой объект {} - если все поля валидны и ошибок нет.
 
+---
+
 ### Слой коммуникации
 
 #### Класс ApiService
@@ -245,3 +247,297 @@ export interface IBuyer {
 Методы класса:  
 `async getProducts(): Promise<IProductsResponse>` - выполняет GET-запрос на энпоинт /product/ с помощью метода `get` переданного api. Возвращает ответ от сервера в формате IProductsResponse (объект с массивом товаров).  
 `async sendOrder(order: IOrderRequest): Promise<IOrderResponse>` - отправляет POST-запрос на эндпоинт /order/ с помощью метода `post` переданного api. Передает объект заказа в формате IOrderRequest и возвращает ответ в формате IOrderResponse.
+
+---
+
+## Слой представления (View)
+
+Все View‑компоненты используют HTML‑шаблоны (`<template id="...">`) и наследуются от базового класса `Component<T>`. Каждый класс представления отвечает за свой блок разметки, в ответ на любое действие пользователя генерирует событие, которое будет обработано презентером.
+
+---
+
+### Класс Header (extends Component)
+
+### Класс Gallery (extends Component)
+
+### Класс Modal (extends Component)
+
+### Класс Success (extends Component)
+
+### Карточки товара
+
+```text
+Component<IProduct>
+   ↓
+Card (общий функционал: шаблон, .card__title, .card__price, сеттеры)
+   ├─ CardCatalog (специфика: .card__image, .card__category) — карточка в каталоге (сетка товаров)
+   ├─ CardPreview (специфика: .card__text, .card__button, isInCart) — детальная карточка в модальном окне
+   └─ CardBasket (специфика: .basket__item-index, override render) — компактная строка товара в корзине.
+```
+
+#### Класс Card
+
+`export abstract class Card extends Component<IProduct> {}`- абстрактный родительский класс для всех компонентов карточек в приложении. Выносит в себя типовую логику, общую для всех карточек: клонирование HTML‑шаблона, однократный поиск общих DOM‑элементов и обновление базовых полей (заголовок, цена) через сеттеры. Это избавляет дочерние классы от дублирования этой логики. Наследуется от `Component<IProduct>`, что даёт типобезопасность при передаче данных товара и единый контракт рендера.
+
+- в этом классе нет отдельной реализации render — он наследуется от Component. Логика обновления общих полей выносится в сеттеры. Наследники могут переопределять render, чтобы добавить специфичные поля.
+
+Конструктор класса:  
+`constructor(container: HTMLElement, templateId: string) {}` - принимает контейнер в который будет отрендерена карточка и идентификатор HTML-шаблона.  
+Внутри конструктора:
+
+- вызов super(container) для инициализации базового класса;
+- клонирование шаблона (через утилиту cloneTemplate(templateId) из utils.ts) и вставка его содержимого в this.container;
+- однократный поиск DOM-элементов (через ensureElement из utils.ts) для общих полей в пределах this.container и сохранение ссылок на них в защищенные поля класса.  
+  `.card__title` → сохраняется в this.titleElement.  
+  `.card__price` → сохраняется в this.priceElement.  
+  Если элемент не найден, соответствующее поле остаётся undefined. ensureElement также гарантирует, что найден ровно один элемент.
+
+Поля класса:  
+`protected titleElement?: HTMLElement`- ссылка на элемент названия товара. Может быть undefined.  
+`protected priceElement?: HTMLSpanElement` - ссылка на элемент цены. Может быть undefined.
+
+Методы класса:  
+`set title(title: string): void` - сеттер для установки названия товара. Обновляет textContent у titleElement, если он найден.  
+`set price(value: number | null): void` - сеттер для установки цены товара. Корректно обрабатывает случай null (Отображает "Бесценно"). Если значение есть, форматирует числовое значение и добавляет валюту "синапсов"(${value} синапсов).
+
+#### Класс CardCatalog
+
+`export class CardCatalog extends Card<IProduct> {}` - компонент карточки товара в каталоге (сетка товаров). Отвечает за отображение товара в компактном виде: название, цена, категория, изображение - и за реакцию на клик (открытие детального просмотра товара). Общая логика наследуется от Card.
+
+- не хранит бизнес‑состояние и не управляет логикой перехода к детальной карточке. Он только отображает данные и транслирует события через actions.
+
+Конструктор класса:
+`constructor(container: HTMLElement, actions?: ICardActions) {}` - принимает контейнер (корневой DOM-элемент) и необязательный объект с обработчиками событий.
+Внутри конструктора:
+
+- вызов super(container, 'card-catalog', actions)- инициализирует базовый класс, клонирует шаблон #card-catalog, находит общие элементы и навешивает слушатели (если передан actions);
+- через ensureElement ищутся специфичные элементы в пределах this.container:
+  `.card__image` → this.imageElement.
+  `.card__category` → this.categoryElement.
+
+Поля класса:  
+`private imageElement?: HTMLImageElement` - ссылка на элемент изображения товара. Может быть undefined.
+`private categoryElement?: HTMLElement` - ссылка на элемент для отображения категории товара. Может быть undefined.
+
+Методы класса:  
+`set category(category: string): void` - устанавливает текстовое содержимое элемента категории.
+`set image(url: string): void` - устанавливает изображение, используя утилитарный метод super.setImage(this.imageElement, url, 'Изображение товара')
+
+#### Класс CardPreview
+
+`export class CardPreview extends Card<IProduct> {}` - компонент карточки товара в детальном просмотре(модальном окне). Отвечает за отображение товара в полном виде: название, цена, категория, изображение, описание - и за корректное отображение кнопки действия в зависимости от состояния. Общая логика наследуется от Card.
+
+- не управляет корзиной — он только отображает текущее состояние. Бизнес‑логика добавления/удаления остаётся в презентере, который вызывает updateButtonState и обрабатывает клики через actions.
+
+Конструктор класса:  
+`constructor(container: HTMLElement, actions?: ICardActions) {}` - принимает контейнер (корневой DOM-элемент) и необязательный объект с обработчиками событий.
+Внутри конструктора:
+
+- вызов super(container, 'card-preview', actions) -  инициализирует базовый класс, клонирует шаблон #card-preview, находит общие элементы, навешивает слушатели (если передан actions);
+- через ensureElement ищутся специфичные элементы в пределах this.container:
+  `.card__image` → this.imageElement.
+  `.card__category` → this.categoryElement.
+  `.card__text` → this.descriptionElement.
+  `.card__button` → this.cardButton.
+
+Поля класса:  
+`private categoryElement?: HTMLElement` - ссылка на элемент для отображения категории товара. Может быть undefined.  
+`private imageElement?: HTMLImageElement` - ссылка на элемент изображения товара. Может быть undefined.  
+`private descriptionElement?: HTMLParagraphElement` - ссылка на элемент описания товара. Может быть undefined.  
+`private cardButton?: HTMLButtonElement` - ссылка на кнопку действия. Может быть undefined.  
+`private isInCart = false` - UI‑флаг, отражающий, находится ли товар в корзине (только для отображения текста кнопки, не для хранения бизнес‑состояния).
+
+Методы класса:  
+`set category(category: string): void` - устанавливает текстовое содержимое элемента категории.  
+`set image(url: string): void` - устанавливает изображение, используя утилитарный метод super.setImage(this.imageElement, url, 'Изображение товара').  
+`set description(description: string): void` - устанавливает текстовое содержимое описания товара.  
+`updateButtonState(isInCart: boolean): void` - обновляет текст кнопки добавления товара в корзину в зависимости от состояния товара.
+
+#### Класс CardBasket
+
+`export class CardBasket extends Card<IProduct> {}` - компонент строки товара в корзине (отображается как элемент списка). Отвечает за компактное отображение: порядковый номер, название, цена и кнопка удаления товара. Переопределяет метод render, чтобы добавить специфичную для корзины логику: обновление порядкового номера строки. Общая логика рендера (обновление названия и цены) делегирована родительскому классу Card через вызов super.render. Общая логика наследуется от Card.
+
+Конструктор класса:  
+`constructor(container: HTMLElement, actions?: ICardActions) {}` - принимает контейнер (корневой DOM-элемент) и необязательный объект с обработчиками событий.
+Внутри конструктора:
+
+- вызов super(container, 'card-basket', actions) -  инициализирует базовый класс, клонирует шаблон #card-basket, находит общие элементы, навешивает слушатели (если передан actions);
+- через утилиту ensureElement ищутся элементы (характерные для корзины) в пределах this.container:
+  `.basket__item-index` → сохраняется в this.indexElement.
+  `.basket__item-delete` → сохраняется в this.deleteButton.
+
+Поля класса:
+`private indexElement?: HTMLSpanElement` - ссылка на элемент порядкового номера товара в корзине. Может быть undefined.
+`private deleteButton?: HTMLButtonElement` - ссылка на кнопку удаления товара из корзины. Может быть undefined.
+
+Методы класса:
+`set index(index: number): void` - устанавливает порядковый номер товара в корзине. (в `basket__item-index`)
+
+```ts
+set index(index: number): void {
+  if (this.indexElement) {
+    this.indexElement.textContent = String(index);
+  }
+}
+```
+
+`public override render(data?: Partial<IProduct>): HTMLElement` — переопределяет базовый метод рендера, чтобы обновлять порядковый номер строки при перерисовке корзины. Это гарантирует корректную нумерацию (например, после удаления товара).
+
+```ts
+public override render(data?: Partial<IProduct>): HTMLElement {
+  // Сначала обновляем общие поля (название, цену) через родителя
+  super.render(data);
+
+  if (!data) {
+    return this.container;
+  }
+
+  const product = data as IProduct;
+  // Затем обновляем специфичное поле: порядковый номер строки
+  if (typeof product.index === 'number') {
+    this.index = product.index;
+  }
+  return this.container;
+}
+```
+
+### Формы
+
+```text
+Component
+   ↓
+Form (общий функционал: шаблон, submit handler, inputs, clearErrors, setSubmitEnabled)
+   ├─ OrderForm (специфика: валидация адреса)
+   └─ ContactsForm (специфика: валидация email и телефона)
+```
+
+#### Класс Form
+
+`export abstract class Form extends Component {}` - базовый класс для всех форм.
+Он содержит методы для валидации и отправки формы.
+Выносит в себя типовую логику, общую для всех форм:
+
+- клонирование HTML‑шаблона и вставку в контейнер;
+- поиск элемента form, кнопки submit и контейнера ошибок;
+- автоматический сбор всех input по атрибуту name в словарь inputs;
+- обработку события submit: предотвращает стандартную отправку, запускает валидацию и сбор данных, показывает/очищает ошибки и вызывает внешний колбэк onSubmit;
+- базовые методы управления состоянием формы: clearErrors(), setSubmitEnabled(boolean).
+
+Поля класса:  
+`protected formElement: HTMLFormElement` -  ссылка на элемент формы. Гарантированно инициализируется в конструкторе (иначе выбрасывается ошибка).  
+`protected submitButton?: HTMLButtonElement` -  кнопка отправки. Может быть undefined, если в шаблоне её нет.  
+`protected errorContainer?: HTMLDivElement` - контейнер для отображения ошибок (`.form__errors`). Может быть undefined.  
+`protected inputs: Record<string, HTMLInputElement> = {}` - словарь полей формы, где ключ - значение атрибута name. Заполняется автоматически в конструкторе.
+
+Методы класса:  
+`protected handleSubmit(event: Event): void` - внутренний обработчик события submit. Предотвращает стандартную отправку, вызывает validate, при наличии ошибок показывает их через showErrors, при успехе собирает данные через collectData, очищает ошибки и вызывает onSubmit.  
+`protected validate(errors: string[]): void` - метод для валидации формы. Имеет базовую реализацию (пустое тело), которую расширяют в дочерних классах, добавляя специфичные проверки. Не требует полной перезаписи.  
+`protected collectData(): Record<string, unknown>` - собирает значения всех полей из input в объект вида { name: value, ... }. Имеет базовую универсальную реализацию, которую при необходимости можно переопределить.  
+`protected showErrors(errors: string[]): void` - отображает список ошибок в элементе `.form__errors`. Реализован универсально в родителе, переопределять не требуется.  
+`public clearErrors(): void` - очищает сообщения об ошибках и скрывает контейнер ошибок. Реализован универсально в родителе.  
+`public setSubmitEnabled(enabled: boolean): void` - включает или отключает кнопку отправки. Реализован универсально в родителе.
+
+Публичные свойства:  
+`public onSubmit?(data: Record<string, unknown>)=> void` - коллбэк, который презентер регистрирует для получения даных при успешной валидации.
+
+#### Класс OrderForm
+
+`export class OrderForm extends Form {}` - компонент формы оформления заказа (способ оплаты + адрес доставки). Отвечает за валидацию и трансляцию данных в презентер. Вся типовая логика работы с формой (шаблон, поиск элементов, обработка submit, сбор данных, управление ошибками) делегирована родительскому классу Form.  
+Использует HTML‑шаблон #order.  
+Выбор способа оплаты (клики по кнопкам) не валидируется внутри OrderForm: он обрабатывается в презентере, который хранит состояние выбора и синхронизирует активность кнопки «Далее». Такой подход сохраняет чистоту разделения ответственности в MVP: View отвечает только за отображение кнопок и валидацию полей ввода.
+
+Конструктор класса:
+
+```ts
+constructor(container: HTMLElement) {
+  super(container, 'order');
+}
+```
+
+Принимает контейнер (container: HTMLElement), в котором будет отображаться форма.  
+Внутри конструктора:
+
+- Передаёт container и идентификатор шаблона 'order' в конструктор родителя Form.  
+  (Селектор шаблона в DOM — #order, атрибут name у формы — "order".)
+- Вся остальная инициализация выполняется внутри super:  
+  -- клонирует HTML‑шаблон #order и вставляет его в container;  
+  -- находит элемент `<form name="order">`, кнопку отправки и контейнер ошибок `.form__errors`;  
+  -- автоматически собирает все `<input>` по атрибуту name в словарь this.inputs;  
+  -- навешивает обработчик события submit на форму.
+
+Поля класса:
+Специфических полей у класса нет. Используются унаследованные:  
+`protected inputs: Record<string, HTMLInputElement> = {}` — словарь полей формы по атрибуту name. Через него доступно поле адреса: this.inputs.address.  
+`protected formElement: HTMLFormElement` — ссылка на элемент формы (гарантированно инициализируется в конструкторе).  
+`protected submitButton?: HTMLButtonElement` — кнопка отправки (может быть undefined, если отсутствует в шаблоне).  
+`protected errorContainer?: HTMLElement` — контейнер для отображения ошибок (`.form__errors`, может быть undefined).  
+`public onSubmit?: (data: Record<string, unknown>) => void` — колбэк, который презентер регистрирует для получения данных при успешной валидации.
+
+Методы класса:
+
+- Специфичный метод:  
+  `protected override validate(errors: string[]): void` - Переопределённый метод валидации, реализующий специфику шага «Оформление заказа». Проверяет заполненность поля address. Валидация способа оплаты не выполняется здесь — это задача презентера.
+
+```ts
+protected override validate(errors: string[]): void {
+  const address = this.inputs.address?.value.trim();
+  if (!address) {
+    errors.push('Укажите адрес доставки');
+  }
+}
+```
+
+- Унаследованные методы:  
+  Эти методы позволяют презентеру управлять формой, не зная про DOM.  
+  `collectData(): Record<string, unknown>` - собирает значения всех `<input>` по их name. Используется базовая реализация из Form. Для шаблона #order возвращает объект вида {address: '...'}. Поле payment не включается, так как оно не хранится в `<input>` и определяется состоянием презентера.  
+  `public clearErrors(): void` — очищает и скрывает контейнер ошибок.
+  `public setSubmitEnabled(enabled: boolean): void` — включает/отключает кнопку отправки.
+
+Публичное свойство:
+`public onSubmit?: (data) => void` — колбэк, который презентер регистрирует для получения данных формы при успешной валидации.
+
+#### Класс ContactsForm
+
+`export class ContactsForm extends Form {}` - компонент формы контактов (Email и телефон). Отвечает только за специфичную валидацию полей и трансляцию данных в презентер. Вся типовая логика работы с формой (рендер шаблона, поиск элементов, обработка submit, сбор данных, управление ошибками) делегирована родительскому классу Form.
+
+Использует HTML‑шаблон #contacts.
+
+Конструктор класса:
+
+```ts
+constructor(container: HTMLElement) {
+  super(container, 'contacts');
+}
+```
+
+- принимает контейнер (container: HTMLElement), в котором будет отображаться форма.  
+  Внутри конструктора:
+- Передаёт container и идентификатор шаблона 'contacts' в конструктор родителя Form.  
+  (Селектор шаблона в DOM — #contacts, атрибут name у формы — "contacts".)
+- Вся остальная инициализация выполняется внутри super:  
+  -- клонирует HTML‑шаблон #contacts и вставляет его в container;  
+  -- находит элемент `<form name="contacts">`, кнопку отправки и контейнер ошибок `.form__errors`;  
+  -- автоматически собирает все `<input>` по атрибуту name в словарь this.inputs;  
+  -- навешивает обработчик события submit на форму.
+
+Поля класса:
+Специфических полей у класса нет. Используются унаследованные:  
+`protected inputs: Record<string, HTMLInputElement> = {}` — словарь полей формы по атрибуту name. Через него доступно поля email(this.inputs.email) и phone(this.inputs.phone).  
+`protected formElement: HTMLFormElement` — ссылка на форму.  
+`protected submitButton?: HTMLButtonElement` — кнопка отправки.(может быть undefined, если отсутствует в шаблоне).
+`protected errorContainer?: HTMLElement` — контейнер для отображения ошибок. (`.form__errors`, может быть undefined).
+`public onSubmit?: (data: Record<string, unknown>) => void` — колбэк, который презентер регистрирует для получения данных при успешной валидации.
+
+Методы класса:
+
+- Специфичный метод:  
+  `protected override validate(errors: string[]): void` - Переопределенный метод валидации. Реализует валидацию, специфичную для формы контактов. Сначала проверяется заполненность полей.
+  Затем — корректность формата через отдельные утилиты isValidEmail и isValidPhone.
+
+- Унаследованные методы:  
+  `collectData(): Record<string, unknown>` - собирает значения всех `<input>` по их name. Используется базовая реализация из Form. Для шаблона #contacts возвращает объект вида {email: '...', phone: '...'}.  
+  `public clearErrors(): void` — очищает и скрывает контейнер ошибок.
+  `public setSubmitEnabled(enabled: boolean): void` — включает или отключает кнопку «Оплатить». Позволяет презентеру синхронизировать состояние кнопки с валидностью полей.
+
+Публичное свойство:
+`public onSubmit?: (data: Record<string, unknown>) => void` — колбэк, который презентер регистрирует для получения данных формы при успешной валидации. Презентер подписывается на него, чтобы получить { email, phone } и передать дальше в слой модели или отправить на сервер.
