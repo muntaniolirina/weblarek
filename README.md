@@ -250,7 +250,7 @@ export interface IBuyer {
 
 ---
 
-## Слой представления (View)
+### Слой представления (View)
 
 Все View‑компоненты используют HTML‑шаблоны (`<template id="...">`) и наследуются от базового класса `Component<T>`. Каждый класс представления отвечает за свой блок разметки, в ответ на любое действие пользователя генерирует событие, которое будет обработано презентером.
 
@@ -273,7 +273,7 @@ Component<T> (базовый класс)
    └─ ContactsForm - форма с email и телефоном
 ```
 
-### Класс Header
+#### Класс Header
 
 `class Header extends Component<IHeader>`
 
@@ -315,7 +315,7 @@ this.basketButton.addEventListener("click", () => {
 });
 ```
 
-### Класс Gallery
+#### Класс Gallery
 
 `export class Gallery extends Component<IGalleryData>`
 
@@ -329,7 +329,7 @@ interface IGalleryData {
 }
 ```
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `constructor(container: HTMLElement)`
 
 - container: HTMLElement — корневой элемент блока галереи (.gallery), в который будут вставляться карточки.
@@ -348,7 +348,7 @@ set catalog(items: HTMLElement[]) {
 
 НЕ генерирует событий (события генерируют вложенные в неё CardCatalog)
 
-### Класс Modal
+#### Класс Modal
 
 `export class Modal extends Component<IModalData>`
 
@@ -422,7 +422,7 @@ this.modalContainer.addEventListener("click", (e) => {
 });
 ```
 
-### Класс Basket
+#### Класс Basket
 
 `export class Basket extends Component<IBasketData>`
 
@@ -485,7 +485,7 @@ this.checkoutButton.addEventListener("click", () => {
 
 События удаления товаров (basket:remove) генерирует вложенный в неё компонент CardBasket, а не сам Basket.
 
-### Класс Success
+#### Класс Success
 
 `export class Success extends Component<ISuccessData>`
 
@@ -530,7 +530,7 @@ this.closeButton.addEventListener("click", () => {
 
 ---
 
-### Класс Card (абстрактный)
+#### Класс Card (абстрактный)
 
 `export abstract class Card extends Component<IProduct>`
 
@@ -581,7 +581,7 @@ set price(value: number | null): void {
 
 `abstract render(data: unknown): HTMLElement` — обязательный метод для каждого наследника. Отвечает за полную отрисовку компонента (клонирование шаблона, поиск элементов, заполнение, навешивание слушателей, возврат this.container).
 
-### Класс CardCatalog
+#### Класс CardCatalog
 
 `export class CardCatalog extends Card<IProduct>`
 
@@ -676,7 +676,7 @@ render(data: Partial<IProduct>): HTMLElement {
 **События, которые генерирует:**  
 `product:open` — при клике по карточке. В payload передаётся { id: string }. Сигнал Презентеру открыть модальное окно с детальным просмотром.
 
-### Класс CardPreview
+#### Класс CardPreview
 
 `export class CardPreview extends Card<IProduct>`
 
@@ -831,7 +831,7 @@ render(data: Partial<IProduct>): HTMLElement {
 `product:add-to-cart` — при клике на "В корзину". Payload: { id: string }  
 `product:remove-from-cart` — при клике на "Удалить из корзины". Payload: { id: string }
 
-### Класс CardBasket
+#### Класс CardBasket
 
 `export class CardBasket extends Card<IProduct>`
 
@@ -927,7 +927,7 @@ render(item: ICardBasketData): HTMLElement {
 **События, которые генерирует:**  
 `basket:remove` — при клике на кнопку удаления. В payload передаётся { id: string }. Сигнал Презентеру удалить товар из корзины.
 
-### Класс Form (абстрактный)
+#### Класс Form (абстрактный)
 
 `export abstract class Form extends Component<IFormState>`
 
@@ -964,7 +964,7 @@ interface IFormState {
 `${this.container.name}:change` — при вводе в любые поля input. Передает payload { field: имя_инпута, value: значение }.  
 `${this.container.name}:submit` — при отправке формы (блокирует стандартную отправку e.preventDefault()).
 
-### Класс OrderForm
+#### Класс OrderForm
 
 `export class OrderForm extends Form<IOrderForm>`
 
@@ -992,7 +992,7 @@ interface IOrderForm {
 `order:payment:change` — при клике на кнопку оплаты. Payload: { target: 'card' | 'cash' }.  
 Наследует от Form: order:change, order:submit.
 
-### Класс ContactsForm
+#### Класс ContactsForm
 
 `export class ContactsForm extends Form<IContactsForm>`
 
@@ -1026,7 +1026,8 @@ interface IContactsForm {
 
 Взаимодействие между слоями Model, View и Presenter осуществляется через брокер событий (EventEmitter). Каждое действие пользователя или изменение данных генерирует событие с определенным именем и payload'ом. Презентер подписывается на эти события и обрабатывает их, вызывая методы моделей и представлений.
 
-**События от Представлений (View)**  
+#### **События от Представлений (View)**
+
 `basket:open`  
 Генерируется: Header — клик по иконке корзины в шапке  
 Payload: —
@@ -1079,7 +1080,8 @@ Payload: { field: 'email' | 'phone', value: string }
 Генерируется: Form (ContactsForm) — отправка формы (кнопка "Оплатить")  
 Payload: —
 
-**События от Моделей данных (Model)**  
+#### **События от Моделей данных (Model)**
+
 `products:changed`  
 Генерируется: Products — обновлен каталог товаров (загружен с сервера)  
 Payload: { items: IProduct[] }
@@ -1100,7 +1102,8 @@ Payload: { field: keyof IBuyer, value: string }
 Генерируется: Buyer — изменены ошибки валидации формы  
 Payload: { errors: Partial<Record<keyof IBuyer, string>>, formName: 'order' | 'contacts' }
 
-**События для управления модальными окнами**  
+#### **События для управления модальными окнами**
+
 Презентер использует следующие события для управления интерфейсом (обрабатываются внутри Презентера, не генерируются компонентами):
 
 `product:open` — Открыть модальное окно с детальным просмотром товара. Действие Презентера: получает товар из Products, создает CardPreview, вставляет в Modal и открывает.
