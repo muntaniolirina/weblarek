@@ -306,7 +306,7 @@ set counter(value: number) {
 }
 ```
 
-**События, которые генерирует:**
+**События, которые генерирует:**  
 `basket:open` — при клике на кнопку корзины. Вызывается через this.events.emit('basket:open').
 
 ```ts
@@ -332,12 +332,12 @@ interface IGalleryData {
 **Конструктор класса:**
 `constructor(container: HTMLElement)`
 
-- container: HTMLElement — корневой элемент блока галереи (.gallery) в который будут вставляться карточки.
+- container: HTMLElement — корневой элемент блока галереи (.gallery), в который будут вставляться карточки.
 
-**Поля класса:**
+**Поля класса:**  
 `protected catalogElement: HTMLElement` — ссылка на элемент, в который будут вставляться карточки. В текущей реализации это сам контейнер, переданный в конструктор.
 
-**Методы класса:**
+**Методы класса:**  
 `set catalog (items: HTMLElement[]): void` - сеттер, очищает контейнер и вставляет переданный массив готовых карточек.
 
 ```ts
@@ -362,13 +362,13 @@ interface IModalData {
 }
 ```
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
 
 - container — корневой элемент модального окна (.modal).
 - events — брокер событий для передачи действий
 
-**Поля класса:**
+**Поля класса:**  
 `private readonly modalContainer: HTMLElement` - ссылка на корневой блок .modal.  
 `private readonly closeButton: HTMLButtonElement` - cсылка на кнопку закрытия (`.modal__close`).  
 `private readonly contentArea: HTMLElement` — область для вставки контента (`.modal__content`).  
@@ -404,8 +404,8 @@ setContent(element: HTMLElement): void {
 }
 ```
 
-**События, которые генерирует:**
-`modal:close` — — при клике на `.modal__close` или клике вне модалки.
+**События, которые генерирует:**  
+`modal:close` — при клике на `.modal__close` или клике вне модалки.
 
 ```ts
 // В конструкторе:
@@ -473,7 +473,7 @@ setCheckoutEnabled(enabled: boolean): void {
 }
 ```
 
-**События, которые генерирует:**
+**События, которые генерирует:**  
 `checkout:open` — при клике на кнопку "Оформить"
 
 ```ts
@@ -499,17 +499,17 @@ interface ISuccessData {
 }
 ```
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
 
-- container: корневой элемент (создаётся из шаблона #success)
-- events — брокер событий (EventEmitter), через который компонент сообщает Презентеру о действиях пользователя.
+- container - корневой элемент (создаётся из шаблона #success)
+- events - брокер событий (EventEmitter), через который компонент сообщает Презентеру о действиях пользователя.
 
 **Поля класса:**  
 `private descriptionElement: HTMLParagraphElement` — элемент для отображения суммы (`.order-success__description`).  
 `private closeButton: HTMLButtonElement` — кнопка «За новыми покупками!» (`.order-success__close`).
 
-Методы класса:
+**Методы класса:**  
 `set total(value: number): void` — обновляет отображение суммы.
 
 ```ts
@@ -518,7 +518,7 @@ set total(value: number) {
 }
 ```
 
-**События, которые генерирует:**
+**События, которые генерирует:**  
 `success:close` — при клике на кнопку "За новыми покупками!".
 
 ```ts
@@ -544,7 +544,7 @@ interface ICardActions {
 }
 ```
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `protected constructor(container: HTMLElement, protected events: IEvents)`
 
 - container — корневой DOM‑элемент карточки.
@@ -585,7 +585,7 @@ set price(value: number | null): void {
 
 `export class CardCatalog extends Card<IProduct>`
 
-- компонент карточки товара в каталоге (сетка товаров). Отвечает за отображение товара в компактном виде: название, цена, категория, изображение. Генерирует событие при клике на карточку. Общая логика наследуется от Card.
+- Компонент карточки товара в каталоге (сетка товаров). Отвечает за отображение товара в компактном виде: название, цена, категория, изображение. Генерирует событие при клике на карточку. Общая логика наследуется от Card.
 
 **Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
@@ -673,7 +673,7 @@ render(data: Partial<IProduct>): HTMLElement {
 }
 ```
 
-**События, которые генерирует:**
+**События, которые генерирует:**  
 `product:open` — при клике по карточке. В payload передаётся { id: string }. Сигнал Презентеру открыть модальное окно с детальным просмотром.
 
 ### Класс CardPreview
@@ -827,7 +827,7 @@ render(data: Partial<IProduct>): HTMLElement {
 }
 ```
 
-**События, которые генерирует:**
+**События, которые генерирует:**  
 `product:add-to-cart` — при клике на "В корзину". Payload: { id: string }  
 `product:remove-from-cart` — при клике на "Удалить из корзины". Payload: { id: string }
 
@@ -846,7 +846,7 @@ interface ICardBasketData {
 }
 ```
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
 
 - container — корневой элемент строки.
@@ -859,11 +859,11 @@ interface ICardBasketData {
   `.basket__item-index` → сохраняется в this.indexElement.
   `.basket__item-delete` → сохраняется в this.deleteButton.
 
-**Поля класса:**
+**Поля класса:**  
 `protected indexElement?: HTMLSpanElement` - ссылка на элемент порядкового номера товара в корзине (`.basket__item-index`).  
 `private deleteButton?: HTMLButtonElement` - ссылка на кнопку удаления товара из корзины (`.basket__item-delete`).
 
-**Методы класса:**
+**Методы класса:**  
 `set index(index: number): void` - устанавливает порядковый номер товара в корзине (в `.basket__item-index`)
 
 ```ts
@@ -924,7 +924,7 @@ render(item: ICardBasketData): HTMLElement {
 }
 ```
 
-**События, которые генерирует:**
+**События, которые генерирует:**  
 `basket:remove` — при клике на кнопку удаления. В payload передаётся { id: string }. Сигнал Презентеру удалить товар из корзины.
 
 ### Класс Form (абстрактный)
@@ -942,7 +942,7 @@ interface IFormState {
 }
 ```
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `constructor(container: HTMLFormElement, protected events: IEvents)`
 
 - container: элемент формы <form>.
@@ -978,11 +978,11 @@ interface IOrderForm {
 }
 ```
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `constructor(container: HTMLFormElement, protected events: IEvents)`  
 Внутри конструктора вызывает super(container, events).
 
-**Поля класса:**
+**Поля класса:**  
 `private paymentButtons: HTMLButtonElement[] = []` — массив ссылок на кнопки выбора способа оплаты (`.button_alt`).
 
 **Методы класса:**  
@@ -1017,8 +1017,10 @@ interface IContactsForm {
 **Методы класса:**  
 отсутствуют (не требуется переопределение, вся логика наследуется от Form).
 
-**События, которые генерирует:**
+**События, которые генерирует:**  
 Наследуются от Form: `contacts:change` — при вводе данных в поля email или phone. `contacts:submit` — при нажатии кнопки "Оплатить".
+
+---
 
 ### События приложения
 
@@ -1098,7 +1100,7 @@ Payload: { field: keyof IBuyer, value: string }
 Генерируется: Buyer — изменены ошибки валидации формы  
 Payload: { errors: Partial<Record<keyof IBuyer, string>>, formName: 'order' | 'contacts' }
 
-**События для управления модальными окнами**
+**События для управления модальными окнами**  
 Презентер использует следующие события для управления интерфейсом (обрабатываются внутри Презентера, не генерируются компонентами):
 
 `product:open` — Открыть модальное окно с детальным просмотром товара. Действие Презентера: получает товар из Products, создает CardPreview, вставляет в Modal и открывает.
