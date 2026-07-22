@@ -10,6 +10,12 @@ import { ApiService } from './components/services/ApiService';
 import { IProductsResponse } from './types/index';
 import { API_URL } from './utils/constants';
 
+import { IEvents } from './components/base/Events';
+import { Header } from './components/view/Header';
+import { Gallery } from './components/view/Gallery';
+import { Success } from '../src/components/view/Success';
+import { cloneTemplate } from './utils/utils';
+
 //--- ТЕСТИРОВАНИЕ ---
 
 console.log('=== Проверка моделей данных (с apiProducts) ===');
@@ -152,3 +158,71 @@ apiService.getProducts()
   .catch( (error) => {
     console.error('Не удалось получить товары:', error);
   })
+
+// --- ТЕСТИРОВАНИЕ VIEW ---
+
+// --- Тестирование Header ---
+console.log('🧪 ТЕСТ Header');
+
+// функция тестировщик
+function testHeader() {
+  const headerContainer = document.querySelector<HTMLElement>('.header')!; // оператор ! говорит я уверена что значение не null
+  const header = new Header(headerContainer, {
+    on: () => {},
+    emit: (event: string) => console.log(`🔔 Событие ${event} отправлено`),
+    trigger: () => () => {} 
+  } as IEvents); // явно приводим к IEvents; инициализируем Header
+  header.counter = 3; // установим тестовое количество товаров
+
+  console.log('Header отображается:', headerContainer);
+
+  return header;
+}
+testHeader();
+
+
+// --- Тестирование Gallery ---
+console.log('🧪 ТЕСТ Gallery');
+
+// функция тестировщик
+function testGallery() {
+  const galleryContainer = document.querySelector<HTMLElement>('.gallery')!;
+  const gallery = new Gallery(galleryContainer);
+
+  // Создадим тестовые карточки
+  const card1 = document.createElement('div');
+  card1.textContent = 'Товар 1';
+  card1.style.border = '2px double red';
+  
+  const card2 = document.createElement('div');
+  card2.textContent = 'Товар 2';
+  card2.style.border = '2px dotted blue';
+
+  gallery.catalog = [card1, card2]; // сеттер set catalog
+
+  console.log('✅ Gallery отображает карточки', galleryContainer.innerHTML);
+  return gallery;
+}
+testGallery();
+
+
+// --- Тестирование Success ---
+console.log('🧪 ТЕСТ Success');
+
+// функция тестировщик
+function testSuccess() {
+  const successContainer = cloneTemplate<HTMLElement>('#success');
+  const success = new Success(successContainer, {
+    on: () => {},
+    emit: (event: string) => console.log(`🔔 Событие ${event} отправлено`),
+    trigger: () => () => {}
+  } as IEvents); // явно приводим к IEvents; инициализируем Success
+  success.total = 3000; // установим тестовую сумму
+
+  document.body.appendChild(success.render());
+  console.log('✅ Success отображается');
+  
+  return success;
+}
+testSuccess();
+

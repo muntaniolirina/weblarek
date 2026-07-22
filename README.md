@@ -275,14 +275,14 @@ Component<T> (базовый класс)
 
 #### Класс Header
 
-`class Header extends Component<IHeader>`
+`export class Header extends Component<IHeader>`
 
 - Компонент шапки сайта. Отвечает за отображение логотипа, кнопки корзины и счётчика товаров в корзине. Не содержит логику — только отображение и трансляция событий.
 
 **Интерфейсы:**
 
 ```ts
-interface IHeader {
+interface IHeaderData {
   counter: number;
 }
 ```
@@ -503,7 +503,7 @@ interface ISuccessData {
 `constructor(container: HTMLElement, protected events: IEvents)`
 
 - container - корневой элемент (создаётся из шаблона #success)
-- events - брокер событий (EventEmitter), через который компонент сообщает Презентеру о действиях пользователя.
+- events - брокер событий, через который компонент сообщает Презентеру о действиях пользователя.
 
 **Поля класса:**  
 `private descriptionElement: HTMLParagraphElement` — элемент для отображения суммы (`.order-success__description`).  
