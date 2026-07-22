@@ -14,8 +14,8 @@ export class Success extends Component<ISuccessData> {
     super(container);
 
     // ищем элементы в переданном контейнере
-    this.descriptionElement = ensureElement<HTMLParagraphElement>('.order-success__description', container); // описание
-    this.closeButton = ensureElement<HTMLButtonElement>('.order-success__close', container); // кнопка
+    this.descriptionElement = ensureElement<HTMLParagraphElement>('.order-success__description', this.container); // описание
+    this.closeButton = ensureElement<HTMLButtonElement>('.order-success__close', this.container); // кнопка
 
     // вешаем обработчики событий. Слушатель вешается 1 раз в конструкторе
     this.closeButton.addEventListener('click', () => {

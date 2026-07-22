@@ -366,31 +366,38 @@ interface IModalData {
 `constructor(container: HTMLElement, protected events: IEvents)`
 
 - container — корневой элемент модального окна (.modal).
-- events — брокер событий для передачи действий
+- events — брокер событий для передачи действий  
+  В конструкторе:
+
+- Поиск элементов через ensureElement:  
+  `.modal__close` → this.closeButton  
+  `.modal__content` → this.contentArea
+- Установка слушателей событий (один раз):  
+  -- При клике на closeButton — вызывает close() и эмитит modal:close  
+  -- При клике на оверлей (проверка e.target === container) — вызывает close() и эмитит modal:close
 
 **Поля класса:**  
-`private readonly modalContainer: HTMLElement` - ссылка на корневой блок .modal.  
-`private readonly closeButton: HTMLButtonElement` - cсылка на кнопку закрытия (`.modal__close`).  
-`private readonly contentArea: HTMLElement` — область для вставки контента (`.modal__content`).  
+`private closeButton: HTMLButtonElement` - cсылка на кнопку закрытия (`.modal__close`).  
+`private contentArea: HTMLElement` — область для вставки контента (`.modal__content`).  
 `private isOpen: boolean = false` - внутренний флаг состояния окна. Используется для защиты от повторных вызовов open() / close(). Если окно уже открыто, повторный open() ничего не делает; аналогично с close().
 
 **Методы класса:**  
-`open(): void {}` — делает модальное окно видимым (добавляет класс `modal_active`). Перед этим проверяет isOpen: если true, метод завершается без изменений. После успешного показа устанавливает isOpen = true.
+`open(): void {}` — делает модальное окно видимым (добавляет класс `modal_active`). Если окно уже открыто (isOpen === true), метод завершается без изменений.
 
 ```ts
 open(): void {
   if (this.isOpen) return;
-  this.modalContainer.classList.add('modal_active');
+  this.container.classList.add('modal_active');
   this.isOpen = true;
 }
 ```
 
-`close(): void {}` — скрывает модальное окно (убирает класс `modal_active`). Проверяет isOpen: если false, метод завершается. После скрытия устанавливает isOpen = false.
+`close(): void {}` — скрывает модальное окно (убирает класс `modal_active`). Если окно уже закрыто (isOpen === false), метод завершается без изменений.
 
 ```ts
 close(): void {
   if (!this.isOpen) return;
-  this.modalContainer.classList.remove('modal_active');
+  this.container.classList.remove('modal_active');
   this.isOpen = false;
 }
 ```
@@ -404,23 +411,20 @@ setContent(element: HTMLElement): void {
 }
 ```
 
-**События, которые генерирует:**  
-`modal:close` — при клике на `.modal__close` или клике вне модалки.
+`render(data?: IModalData): HTMLElement` — если передан data.content, вызывает setContent. Возвращает this.container.
 
 ```ts
-// В конструкторе:
-this.closeButton.addEventListener("click", () => {
-  this.close();
-  this.events.emit("modal:close");
-});
-
-this.modalContainer.addEventListener("click", (e) => {
-  if (e.target === this.modalContainer) {
-    this.close();
-    this.events.emit("modal:close");
+render(data?: IModalData): HTMLElement {
+  const copy = data ? { ...data } : {};
+  if (copy.content) {
+    this.setContent(copy.content);
   }
-});
+  return this.container;
+}
 ```
+
+**События, которые генерирует:**  
+`modal:close` — при клике на кнопку закрытия (`.modal__close`) или клике вне модального окна (по оверлею .modal). Сигнал Презентеру о закрытии модального окна.
 
 #### Класс Basket
 
@@ -440,24 +444,32 @@ interface IBasketData {
 **Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
 
-- container — корневой элемент, куда будет вставлен шаблон корзины (`.basket`).
-- events — брокер событий.
+- container — корневой элемент(.basket). Передаётся извне (клон шаблона #basket).
+- events — брокер событий.  
+  В конструкторе:
+
+- Поиск элементов через ensureElement:  
+  `.basket__list` → this.listElement  
+  `.basket__price` → this.priceElement  
+  `.basket__button` → this.checkoutButton
+- Установка слушателей событий (один раз): При клике на checkoutButton — эмитит basket:order
 
 **Поля класса:**  
-`private listElement: HTMLUListElement` — ссылка на список `.basket__list`, в который будут вставляться карточки CardBasket.  
+`private listElement: HTMLUListElement` — ссылка на список товаров `.basket__list`, в который будут вставляться карточки CardBasket.  
 `private priceElement: HTMLSpanElement` — элемент для отображения итоговой суммы. `.basket__price`  
 `private checkoutButton: HTMLButtonElement` — ссылка на кнопку `.basket__button`
 
 **Методы класса:**  
-`set items(items: HTMLElement[]): void` — заменяет содержимое списка товаров
+`set items(items: HTMLElement[]): void` — заменяет содержимое списка товаров переданными элементами. Если массив пуст — список очищается, и CSS автоматически показывает надпись «Корзина пуста» через псевдоэлемент ::before.
 
 ```ts
 set items(items: HTMLElement[]) {
   this.listElement.replaceChildren(...items);
+  // Если items пустой — CSS сам добавит ::before с "Корзина пуста"
 }
 ```
 
-`set totalCost(cost: number): void` — обновляет отображение итоговой суммы
+`set totalCost(cost: number): void` — обновляет отображение итоговой суммы.
 
 ```ts
 set totalCost(cost: number) {
@@ -465,7 +477,7 @@ set totalCost(cost: number) {
 }
 ```
 
-`setCheckoutEnabled(enabled: boolean): void` — включает/отключает кнопку оформления
+`setCheckoutEnabled(enabled: boolean): void` — включает/отключает кнопку оформления. При пустой корзине Презентер вызывает setCheckoutEnabled(false), при наличии товаров — setCheckoutEnabled(true).
 
 ```ts
 setCheckoutEnabled(enabled: boolean): void {
@@ -473,15 +485,10 @@ setCheckoutEnabled(enabled: boolean): void {
 }
 ```
 
-**События, которые генерирует:**  
-`checkout:open` — при клике на кнопку "Оформить"
+Метод render наследуется от Component без изменений.
 
-```ts
-// В конструкторе:
-this.checkoutButton.addEventListener("click", () => {
-  this.events.emit("checkout:open");
-});
-```
+**События, которые генерирует:**  
+`basket:order` — при клике на кнопку "Оформить". Сигнал Презентеру перейти к оформлению заказа.
 
 События удаления товаров (basket:remove) генерирует вложенный в неё компонент CardBasket, а не сам Basket.
 
@@ -545,17 +552,23 @@ interface ICardActions {
 ```
 
 **Конструктор класса:**  
-`protected constructor(container: HTMLElement, protected events: IEvents)`
+`constructor(container: HTMLElement, protected events: IEvents)`
 
 - container — корневой DOM‑элемент карточки.
-- events — брокер событий для трансляции действий пользователя.
+- events — брокер событий для трансляции действий пользователя.  
+  В конструкторе:
+
+- Вызов super(container) — инициализация базового компонента.
+- Поиск общих для всех карточек элементов через ensureElement:  
+  `.card__title` → this.titleElement  
+  `.card__price` → this.priceElement
 
 **Поля класса:**  
-`protected titleElement?: HTMLElement`- ссылка на элемент названия товара(`.card__title`).  
-`protected priceElement?: HTMLSpanElement` - ссылка на элемент цены (`.card__price`).
+`protected titleElement: HTMLElement`- ссылка на элемент названия товара(`.card__title`).  
+`protected priceElement: HTMLSpanElement` - ссылка на элемент цены (`.card__price`).
 
 **Методы класса:**  
-`set title(title: string): void` - сеттер для установки названия товара. Обновляет textContent у titleElement, если он найден.
+`set title(value: string): void` - сеттер для установки названия товара. Обновляет textContent у titleElement, если он найден.
 
 ```ts
 set title(value: string): void {
@@ -565,7 +578,7 @@ set title(value: string): void {
 }
 ```
 
-`set price(value: number | null): void` - сеттер для установки цены товара. Корректно обрабатывает случай null (Отображает "Бесценно"). Если значение есть, форматирует числовое значение и добавляет валюту "синапсов"(${value} синапсов).
+`set price(value: number | null): void` - сеттер для установки цены товара. Корректно обрабатывает случай null (Отображает "Бесценно").
 
 ```ts
 set price(value: number | null): void {
@@ -579,32 +592,38 @@ set price(value: number | null): void {
 }
 ```
 
-`abstract render(data: unknown): HTMLElement` — обязательный метод для каждого наследника. Отвечает за полную отрисовку компонента (клонирование шаблона, поиск элементов, заполнение, навешивание слушателей, возврат this.container).
+`render(data?: Partial<IProduct>): HTMLElement` — базовый метод (наследуется от Component). Через Object.assign копирует свойства data в this, вызывая сеттеры. Возвращает this.container. Переопределяется в наследниках для добавления специфичной логики.
 
 #### Класс CardCatalog
 
-`export class CardCatalog extends Card<IProduct>`
+`export class CardCatalog extends Card`
 
-- Компонент карточки товара в каталоге (сетка товаров). Отвечает за отображение товара в компактном виде: название, цена, категория, изображение. Генерирует событие при клике на карточку. Общая логика наследуется от Card.
+- Компонент карточки товара в каталоге (сетка товаров). Отвечает за отображение товара в компактном виде: название, цена, категория, изображение. Генерирует событие product:open при клике на карточку. Общая логика наследуется от Card.
 
 **Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
 
-- container — корневой DOM‑элемент, в который будет помещена карточка.
-- events — брокер событий
+- container — корневой DOM‑элемент, в который будет помещена карточка. Клонированный шаблон #card-catalog (передаётся извне).
+- events — брокер событий  
+  В конструкторе:
+
+- Вызов super(container, events) — базовая инициализация (поиск общих элементов).
+- Поиск специфичных элементов через ensureElement:  
+  `.card__image` → this.imageElement  
+  `.card__category` → this.categoryElement
+- Установка слушателя событий (один раз): При клике на карточку читает dataset.productId и эмитит product:open
 
 **Поля класса:**  
-`private imageElement?: HTMLImageElement` - ссылка на элемент изображения товара (`.card__image`).  
-`private categoryElement?: HTMLElement` - ссылка на элемент для отображения категории товара (`.card__category`).
+`protected imageElement: HTMLImageElement` - ссылка на элемент изображения товара (`.card__image`).  
+`protected categoryElement: HTMLElement` - ссылка на элемент для отображения категории товара (`.card__category`).
 
 **Методы класса:**  
-`set category(category: string): void` - устанавливает текстовое содержимое элемента категории.
+`set category(value: string): void` - устанавливает текстовое содержимое категории и применяет модификатор цвета из categoryMap (константа из utils/constants.ts).
 
 ```ts
 set category(value: string): void {
   if (this.categoryElement) {
     this.categoryElement.textContent = value;
-    // Применить модификатор из categoryMap (константа из utils/constants.ts)
     const modifier = categoryMap[value as keyof typeof categoryMap];
     if (modifier) {
       this.categoryElement.className = `card__category ${modifier}`;
@@ -613,7 +632,7 @@ set category(value: string): void {
 }
 ```
 
-`set image(url: string): void`- устанавливает изображение, используя утилитарный метод setImage
+`set image(url: string): void`- устанавливает изображение, используя утилитарный метод setImage.
 
 ```ts
 set image(url: string): void {
@@ -623,69 +642,35 @@ set image(url: string): void {
 }
 ```
 
-`render(data: Partial<IProduct>): HTMLElement` — отрисовывает карточку
-
-- Клонирует шаблон #card-catalog.
-- Переинициализирует все DOM‑элементы (в том числе общие) в новом контейнере.
-- Заполняет данные через сеттеры: this.title, this.price, this.category, this.image.
-- Сохраняет ID для последующего использования setElementData(this.container, { productId: data.id }); (метод из utils.ts)
-- Вешает обработчик клика по карточке: эмитит событие product:open с { id }.
-- Возвращает this.container.
+`render(data: Partial<IProduct>): HTMLElement` — заполняет карточку данными, сохраняет ID товара в dataset, возвращает this.container. Обработчик клика уже установлен в конструкторе, в render() слушатели не добавляются.
 
 ```ts
 render(data: Partial<IProduct>): HTMLElement {
-  // Клонируем шаблон #card-catalog
-  this.container = cloneTemplate<HTMLElement>('#card-catalog');
-
-  // Переинициализируем все элементы в новом контейнере
-  this.titleElement = ensureElement<HTMLElement>(
-    '.card__title',
-    this.container
-  );
-  this.priceElement = ensureElement<HTMLSpanElement>(
-    '.card__price',
-    this.container
-  );
-  this.imageElement = ensureElement<HTMLImageElement>(
-    '.card__image',
-    this.container
-  );
-  this.categoryElement = ensureElement<HTMLElement>(
-    '.card__category',
-    this.container
-  );
-
-  // Заполняем данные через сеттеры
   if (data.title) this.title = data.title;
   if (data.price !== undefined) this.price = data.price;
   if (data.image) this.image = data.image;
   if (data.category) this.category = data.category;
 
-  // Сохраняем ID для последующего использования
+  // Сохраняем ID товара на DOM-элементе — обработчик в конструкторе прочитает его при клике
   setElementData(this.container, { productId: data.id });
-
-  // Навешиваем обработчик клика
-  this.container.addEventListener('click', () => {
-    this.events.emit('product:open', { id: data.id });
-  });
 
   return this.container;
 }
 ```
 
 **События, которые генерирует:**  
-`product:open` — при клике по карточке. В payload передаётся { id: string }. Сигнал Презентеру открыть модальное окно с детальным просмотром.
+`product:open` — клик по карточке. В payload передаётся { id: string }. Сигнал Презентеру открыть модальное окно с детальным просмотром.
 
 #### Класс CardPreview
 
-`export class CardPreview extends Card<IProduct>`
+`export class CardPreview extends Card`
 
-- Детальная карточка товара в модальном окне. Отображает полную информацию: изображение, название, цена, категория, описание. Содержит кнопку действия ("В корзину" или "Удалить из корзины"). Кнопка отключена, если цена = null.
+- Детальная карточка товара в модальном окне. Отображает полную информацию: изображение, название, цена, категория, описание. Содержит кнопку действия ("Купить" или "Удалить из корзины"). Кнопка отключена, если цена = null.
 
 **Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
 
-- container — корневой DOM‑элемент карточки.
+- container — корневой DOM‑элемент карточки. Клонированный шаблон #card-preview (передаётся извне).
 - events — брокер событий
 
 Внутри конструктора:
@@ -696,13 +681,13 @@ render(data: Partial<IProduct>): HTMLElement {
   `.card__category` → this.categoryElement.  
   `.card__text` → this.descriptionElement.  
   `.card__button` → this.cardButton.
+- Установка слушателя на кнопку (один раз): При клике читает dataset.productId и dataset.isInCart, эмитит product:add-to-cart или product:remove-from-cart
 
 **Поля класса:**  
-`protected imageElement?: HTMLImageElement` — ссылка на элемент изображения `.card__image`.  
-`protected categoryElement?: HTMLElement` - ссылка на элемент для отображения категории товара (`.card__category`).  
-`protected descriptionElement?: HTMLParagraphElement` - ссылка на элемент описания товара (`.card__text`).  
-`protected cardButton?: HTMLButtonElement` - ссылка на кнопку действия (`.card__button`).  
-`private isInCart = false` - UI‑флаг, отражающий, находится ли товар в корзине (только для отображения текста кнопки, не для хранения бизнес‑состояния).
+`protected imageElement: HTMLImageElement` — ссылка на элемент изображения `.card__image`.  
+`protected categoryElement: HTMLElement` - ссылка на элемент для отображения категории товара (`.card__category`).  
+`protected descriptionElement: HTMLParagraphElement` - ссылка на элемент описания товара (`.card__text`).  
+`protected cardButton: HTMLButtonElement` - ссылка на кнопку действия (`.card__button`).
 
 **Методы класса:**  
 `set image(url: string): void` - устанавливает изображение, используя утилитарный метод setImage.
@@ -715,7 +700,7 @@ set image(url: string): void {
 }
 ```
 
-`set category(category: string)` - устанавливает текстовое содержимое элемента категории.
+`set category(value: string): void` - устанавливает категорию с модификатором цвета.
 
 ```ts
 set category(value: string): void {
@@ -729,7 +714,7 @@ set category(value: string): void {
 }
 ```
 
-`set description(value: string)` - устанавливает текстовое содержимое описания товара.
+`set description(value: string): void` - устанавливает текстовое содержимое описания товара.
 
 ```ts
 set description(value: string): void {
@@ -739,132 +724,78 @@ set description(value: string): void {
 }
 ```
 
-`updateButtonState(isInCart: boolean, price: number | null): void` - обновляет текст кнопки добавления товара в корзину в зависимости от состояния товара.
+`updateButtonState(isInCart: boolean, price: number | null): void` - обновляет текст и состояние кнопки. Сохраняет флаг isInCart в dataset (для обработчика в конструкторе).
 
 ```ts
 updateButtonState(isInCart: boolean, price: number | null): void {
-  this.isInCart = isInCart;
+  // Сохраняем состояние на DOM-элементе (для обработчика в конструкторе)
+  this.container.dataset.isInCart = String(isInCart);
 
-  if (!this.cardButton) return;
-
+  if(!this.cardButton) return; //если кнопка не найдена, то выходим
   if (price === null) {
-    // Товар без цены
     this.cardButton.textContent = 'Недоступно';
     this.cardButton.disabled = true;
   } else if (isInCart) {
-    // Товар в корзине
     this.cardButton.textContent = 'Удалить из корзины';
     this.cardButton.disabled = false;
   } else {
-    // Товар можно добавить
-    this.cardButton.textContent = 'В корзину';
+    this.cardButton.textContent = 'Купить';
     this.cardButton.disabled = false;
   }
 }
 ```
 
-`render(data: Partial<IProduct>): HTMLElement` — отрисовывает детальную карточку
-
-- Клонирует шаблон #card-preview.
-- Переинициализирует DOM‑элементы.
-- Заполняет общие и специфичные данные через сеттеры.
-- Вызывает this.updateButtonState(false, data.price ?? null);
-- Сохраняет ID setElementData(this.container, { productId: data.id });
-- Вешает клик на кнопку.
-- Возвращает this.container.
+`render(data: Partial<IProduct>): HTMLElement` — заполняет карточку данными, устанавливает начальное состояние кнопки, сохраняет ID, возвращает this.container. Слушатели уже установлены в конструкторе, в render() не добавляются.
 
 ```ts
 render(data: Partial<IProduct>): HTMLElement {
-  // Клонируем шаблон #card-preview
-  this.container = cloneTemplate<HTMLElement>('#card-preview');
-
-  // Переинициализируем элементы
-  this.titleElement = ensureElement<HTMLElement>(
-    '.card__title',
-    this.container
-  );
-  this.priceElement = ensureElement<HTMLSpanElement>(
-    '.card__price',
-    this.container
-  );
-  this.imageElement = ensureElement<HTMLImageElement>(
-    '.card__image',
-    this.container
-  );
-  this.categoryElement = ensureElement<HTMLElement>(
-    '.card__category',
-    this.container);
-  this.descriptionElement = ensureElement<HTMLParagraphElement>(
-    '.card__text',
-    this.container);
-  this.cardButton = ensureElement<HTMLButtonElement>(
-    '.card__button',
-    this.container);
-
-  // Заполняем данные
   if (data.title) this.title = data.title;
   if (data.price !== undefined) this.price = data.price;
   if (data.image) this.image = data.image;
   if (data.category) this.category = data.category;
   if (data.description) this.description = data.description;
 
-  // Инициальное состояние кнопки (Презентер обновит это позже)
+  // сохраняем id в dataset - обработчик клика прочитает его
+  setElementData(this.container, {productId: data.id});
+
+  // начальное состояние кнопки (товар еще не в корзине)
   this.updateButtonState(false, data.price ?? null);
-
-  // Сохраняем ID
-  setElementData(this.container, { productId: data.id });
-
-  // Навешиваем обработчик клика на кнопку
-  this.cardButton?.addEventListener('click', () => {
-    if (this.isInCart) {
-      this.events.emit('product:remove-from-cart', { id: data.id });
-    } else {
-      this.events.emit('product:add-to-cart', { id: data.id });
-    }
-  });
 
   return this.container;
 }
+
 ```
 
 **События, которые генерирует:**  
-`product:add-to-cart` — при клике на "В корзину". Payload: { id: string }  
+`product:add-to-cart` — при клике на "Купить". Payload: { id: string }  
 `product:remove-from-cart` — при клике на "Удалить из корзины". Payload: { id: string }
 
 #### Класс CardBasket
 
-`export class CardBasket extends Card<IProduct>`
+`export class CardBasket extends Card`
 
 - Строка товара в корзине (элемент списка). Отображает порядковый номер, название, цену и кнопку удаления. Нумерация пересчитывается при каждой отрисовке.
-
-**Интерфейсы:**
-
-```ts
-interface ICardBasketData {
-  product: IProduct;
-  index: number;
-}
-```
 
 **Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
 
-- container — корневой элемент строки.
+- container — корневой элемент строки. Клонированный шаблон #card-basket (передаётся извне).
 - events — брокер событий.
 
 Внутри конструктора:
 
 - вызов super(container, events).
 - через утилиту ensureElement ищутся элементы (характерные для корзины) в пределах this.container:
-  `.basket__item-index` → сохраняется в this.indexElement.
-  `.basket__item-delete` → сохраняется в this.deleteButton.
+  `.basket__item-index` → this.indexElement.
+  `.basket__item-delete` → this.deleteButton.
+- Установка слушателя на кнопку удаления (один раз): При клике читает dataset.productId и эмитит basket:remove
 
 **Поля класса:**  
-`protected indexElement?: HTMLSpanElement` - ссылка на элемент порядкового номера товара в корзине (`.basket__item-index`).  
-`private deleteButton?: HTMLButtonElement` - ссылка на кнопку удаления товара из корзины (`.basket__item-delete`).
+`protected indexElement: HTMLSpanElement` - ссылка на элемент порядкового номера товара в корзине (`.basket__item-index`).  
+`protected deleteButton: HTMLButtonElement` - ссылка на кнопку удаления товара из корзины (`.basket__item-delete`).
 
 **Методы класса:**  
-`set index(index: number): void` - устанавливает порядковый номер товара в корзине (в `.basket__item-index`)
+`set index(value: number): void` - устанавливает порядковый номер товара в корзине (в `.basket__item-index`)
 
 ```ts
 set index(value: number): void {
@@ -874,54 +805,29 @@ set index(value: number): void {
 }
 ```
 
-`render(item: ICardBasketData): HTMLElement` — отрисовывает строку в корзине
-
-- Клонирует шаблон #card-basket.
-- Переинициализирует все DOM‑элементы (общие и специфичные).
-- Заполняет заголовок и цену через сеттеры родителя: this.title = item.product.title, this.price = item.product.price.
-- Устанавливает порядковый номер: this.index = item.index.
-- Сохраняет ID товара setElementData(this.container, { productId: item.product.id });
-- Вешает клик на кнопку удаления: эмитит событие basket:remove с { id: item.product.id }.
-- Возвращает this.container.
+`render(data: Partial<IProduct>): HTMLElement` — заполняет строку корзины данными, сохраняет ID, возвращает this.container. Слушатель удаления уже установлен в конструкторе, в render() не добавляется. Порядковый номер передаётся отдельно через set index() перед вызовом render().
 
 ```ts
-render(item: ICardBasketData): HTMLElement {
-  // Клонируем шаблон #card-basket
-  this.container = cloneTemplate<HTMLElement>('#card-basket');
+render(data: Partial<IProduct>): HTMLElement {
+  if (data.title) this.title = data.title;
+  if (data.price !== undefined) this.price = data.price;
 
-  // Переинициализируем элементы
-  this.titleElement = ensureElement<HTMLElement>(
-    '.card__title',
-    this.container
-  );
-  this.priceElement = ensureElement<HTMLSpanElement>(
-    '.card__price',
-    this.container
-  );
-  this.indexElement = ensureElement<HTMLSpanElement>(
-    '.basket__item-index',
-    this.container
-  );
-  this.deleteButton = ensureElement<HTMLButtonElement>(
-    '.basket__item-delete',
-    this.container
-  );
-
-  // Заполняем данные
-  this.title = item.product.title;
-  this.price = item.product.price;
-  this.index = item.index;
-
-  // Сохраняем ID товара
-  setElementData(this.container, { productId: item.product.id });
-
-  // Навешиваем обработчик удаления
-  this.deleteButton?.addEventListener('click', () => {
-    this.events.emit('basket:remove', { id: item.product.id });
-  });
+  // Сохраняем ID товара — обработчик в конструкторе прочитает его
+  setElementData(this.container, { productId: data.id });
 
   return this.container;
 }
+```
+
+Пример использования:
+
+```ts
+items.forEach((product, index) => {
+  const card = new CardBasket(container, events);
+  card.index = index + 1; // номер передаётся отдельно
+  card.render(product); // render() как у всех
+  basketList.appendChild(card.container);
+});
 ```
 
 **События, которые генерирует:**  
@@ -938,35 +844,74 @@ render(item: ICardBasketData): HTMLElement {
 ```ts
 interface IFormState {
   valid: boolean;
-  errors: string[];
+  error: string; // // текст ошибки от Презентера
 }
 ```
 
 **Конструктор класса:**  
 `constructor(container: HTMLFormElement, protected events: IEvents)`
 
-- container: элемент формы <form>.
+- container: элемент формы <form>. Передаётся извне (клон шаблона #order или #contacts).
 - events: брокер событий
 
+  В конструкторе:
+
+- Сохраняется this.formName = container.name
+- Поиск элементов через ensureElement:
+  `[type="submit"]` → this.submitButton  
+  `.form__errors` → this.errorContainer
+- Установка слушателей событий (один раз):
+  -- При input на любом поле формы — вызывает onInputChange и эмитит ${this.formName}:change с payload { field, value }
+  -- При submit формы — предотвращает стандартную отправку (e.preventDefault()) и эмитит ${this.formName}:submit
+
 **Поля класса:**  
-`protected submitButton?: HTMLButtonElement` -  ссылка на кнопку отправки ([type="submit"]).  
-`protected errorContainer?: HTMLElement` - контейнер для отображения ошибок (`.form__errors`).
+`protected submitButton: HTMLButtonElement` -  ссылка на кнопку отправки ([type="submit"]).  
+`protected errorContainer: HTMLElement` - контейнер для отображения ошибок (`.form__errors`).
+`private formName: string` - значение атрибута name у формы (order или contacts)
 
 **Методы класса:**  
-`protected onInputChange(field: keyof T, value: string): void` - метод-хелпер для генерации события изменения поля формы.  
-`set valid(value: boolean): void` - сеттер, включает или отключает кнопку отправки формы.  
-`set errors(value: string): void` - сеттер для отображения текста ошибок в контейнере errorsContainer.  
-`render(state: Partial<T> & IFormState): HTMLFormElement` - в базовой реализации находит внутри this.container кнопку [type="submit"] (сохраняет в this.submitButton) и контейнер `.form__errors` (сохраняет в this.errorContainer). Затем возвращает this.container. Наследники могут вызывать super.render() и дополнять логику.
+`protected onInputChange(field: string, value: string): void` - метод-хелпер для генерации события изменения поля формы. Вызывается слушателем в конструкторе при вводе в любое поле <input>.
+
+```ts
+protected onInputChange(field: string, value: string): void {
+  this.events.emit(`${this.formName}:change`, { field, value });
+}
+```
+
+`set valid(value: boolean): void` - включает кнопку отправки, если форма валидна (value = true), или отключает, если есть ошибки (value = false).
+
+```ts
+set valid(value: boolean) {
+  this.submitButton.disabled = !value;
+}
+```
+
+`set error(value: string): void` - сеттер для отображения текста ошибок в контейнере errorContainer.
+
+```ts
+set error(value: string) {
+  this.errorContainer.textContent = value;
+}
+```
+
+`render(state: IFormState): HTMLFormElement` - устанавливает состояние формы и возвращает this.container. (переопределен)
+
+```ts
+render(state: IFormState): HTMLFormElement {
+  const { valid, error } = state;
+  if (valid !== undefined) this.valid = valid;
+  if (error !== undefined) this.error = error;
+  return this.container as HTMLFormElement;
+}
+```
 
 **События, которые генерирует:**  
- В конструкторе вешаются глобальные слушатели на форму (используя делегирование):
-
-`${this.container.name}:change` — при вводе в любые поля input. Передает payload { field: имя_инпута, value: значение }.  
-`${this.container.name}:submit` — при отправке формы (блокирует стандартную отправку e.preventDefault()).
+`${this.formName}:change` — при вводе в любые поля input. Payload: { field: string, value: string }.
+`${this.formName}:submit` — при отправке формы (блокирует стандартную отправку e.preventDefault()).
 
 #### Класс OrderForm
 
-`export class OrderForm extends Form<IOrderForm>`
+`export class OrderForm extends Form`
 
 - Форма первого шага оформления заказа. Отвечает за отображение кнопок выбора способа оплаты и поля ввода адреса доставки.
 
@@ -988,13 +933,21 @@ interface IOrderForm {
 **Методы класса:**  
 `set payment(method: string): void` — сеттер, визуально отмечает выбранную кнопку оплаты (добавляет класс `button_alt-active`).
 
+```ts
+set payment(method: string) {
+  this.paymentButtons.forEach(btn => {
+    btn.classList.toggle('button_alt-active', btn.name === method);
+  });
+}
+```
+
 **События, которые генерирует:**  
 `order:payment:change` — при клике на кнопку оплаты. Payload: { target: 'card' | 'cash' }.  
 Наследует от Form: order:change, order:submit.
 
 #### Класс ContactsForm
 
-`export class ContactsForm extends Form<IContactsForm>`
+`export class ContactsForm extends Form`
 
 - Форма второго шага оформления заказа. Содержит поля email и телефона. Функционал полностью наследуется от базового класса Form.
 
@@ -1008,8 +961,15 @@ interface IContactsForm {
 ```
 
 **Конструктор класса:**  
-`constructor(container: HTMLFormElement, events: IEvents)`  
-Внутри конструктора вызывает super(container, events). Базовый класс автоматически ищет все <input> внутри формы и вешает слушатели на события ввода.
+`constructor(container: HTMLFormElement, events: IEvents)`
+
+- Вызывает super(container, events).
+- Базовый класс Form автоматически:
+
+-- Находит все <input> внутри переданного контейнера
+-- Вешает слушатели на события input, генерируя событие contacts:change с данными полей
+-- Вешает слушатель на submit с preventDefault, генерируя событие contacts:submit
+(!HTML-форма должна иметь атрибут name="contacts", чтобы имена событий формировались корректно (contacts:change, contacts:submit)).
 
 **Поля класса:**  
 отсутствуют (используются поля и инструментарий родительского класса).
@@ -1018,7 +978,9 @@ interface IContactsForm {
 отсутствуют (не требуется переопределение, вся логика наследуется от Form).
 
 **События, которые генерирует:**  
-Наследуются от Form: `contacts:change` — при вводе данных в поля email или phone. `contacts:submit` — при нажатии кнопки "Оплатить".
+Наследуются от Form:  
+`contacts:change` — при вводе данных в поля email или phone.  
+`contacts:submit` — при нажатии кнопки "Оплатить".
 
 ---
 
@@ -1037,7 +999,7 @@ Payload: —
 Payload: { id: string }
 
 `product:add-to-cart`
-Генерируется: CardPreview — клик по кнопке "В корзину"
+Генерируется: CardPreview — клик по кнопке "Купить"
 Payload: { id: string }
 
 `product:remove-from-cart`  
@@ -1061,11 +1023,11 @@ Payload: —
 Payload: —
 
 `order:change`  
-Генерируется: Form (OrderForm) — ввод данных в поле адреса  
+Генерируется: OrderForm — ввод данных в поле адреса  
 Payload: { field: 'address', value: string }
 
 `order:submit`  
-Генерируется: Form (OrderForm) — отправка формы (кнопка "Далее")  
+Генерируется: OrderForm — отправка формы (кнопка "Далее")  
 Payload: —
 
 `order:payment:change`  
@@ -1073,11 +1035,11 @@ Payload: —
 Payload: { target: 'card' | 'cash' }
 
 `contacts:change`  
-Генерируется: Form (ContactsForm) — ввод данных в поля email или phone  
+Генерируется: ContactsForm — ввод данных в поля email или phone  
 Payload: { field: 'email' | 'phone', value: string }
 
 `contacts:submit`  
-Генерируется: Form (ContactsForm) — отправка формы (кнопка "Оплатить")  
+Генерируется: ContactsForm — отправка формы (кнопка "Оплатить")  
 Payload: —
 
 #### **События от Моделей данных (Model)**
@@ -1100,20 +1062,26 @@ Payload: { field: keyof IBuyer, value: string }
 
 `formErrors:change`  
 Генерируется: Buyer — изменены ошибки валидации формы  
-Payload: { errors: Partial<Record<keyof IBuyer, string>>, formName: 'order' | 'contacts' }
+Payload: { errors: Partial<Record< keyof IBuyer, string >>, formName: 'order' | 'contacts' }
 
 #### **События для управления модальными окнами**
 
 Презентер использует следующие события для управления интерфейсом (обрабатываются внутри Презентера, не генерируются компонентами):
 
-`product:open` — Открыть модальное окно с детальным просмотром товара. Действие Презентера: получает товар из Products, создает CardPreview, вставляет в Modal и открывает.
+`product:open` — Открыть модальное окно с детальным просмотром товара.
+Действие Презентера: получает товар из Products, создает CardPreview, вставляет в Modal и открывает.
 
-`basket:open` — Открыть модальное окно корзины. Действие Презентера: получает товары из Cart, создает CardBasket для каждого, вставляет в Basket, затем в Modal и открывает.
+`basket:open` — Открыть модальное окно корзины.
+Действие Презентера: получает товары из Cart, создает CardBasket для каждого, вставляет в Basket, затем в Modal и открывает.
 
-`checkout:open` — Открыть форму заказа (первый шаг). Действие Презентера: создает OrderForm, вставляет в Modal и открывает.
+`checkout:open` — Открыть форму заказа (первый шаг).
+Действие Презентера: создает OrderForm, вставляет в Modal и открывает.
 
-`order:submit` — Перейти ко второму шагу оформления. Действие Презентера: создает ContactsForm, вставляет в Modal и открывает.
+`order:submit` — Перейти ко второму шагу оформления.
+Действие Презентера: создает ContactsForm, вставляет в Modal и открывает.
 
-`contacts:submit` — Отправить заказ на сервер. Действие Презентера: собирает все данные из Buyer, формирует IOrderRequest, отправляет через ApiService, показывает Success.
+`contacts:submit` — Отправить заказ на сервер.
+Действие Презентера: собирает все данные из Buyer, формирует IOrderRequest, отправляет через ApiService, показывает Success.
 
-`modal:close` / `success:close` — Закрыть модальное окно. Действие Презентера: закрывает модальное окно.
+`modal:close` / `success:close` — Закрыть модальное окно.
+Действие Презентера: закрывает модальное окно.
