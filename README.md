@@ -179,7 +179,7 @@ export interface IBuyer {
 
 - модель каталога товаров. Хранит массив товаров, выбранный товар, предоставляет методы для работы с ними. Уведомляет Презентер через события при изменении данных.
 
-**Конструктор класса:**
+**Конструктор класса:**  
 `constructor(protected events: IEvents) {} `  
 Принимает один параметр — `events: IEvents` (брокер событий). Сохраняет его в защищённое поле `protected events` для генерации событий при изменении данных.  
 Внутренние поля инициализируются при объявлении: `private items` — пустым массивом, `private selectedItem` — значением null.
@@ -191,7 +191,7 @@ export interface IBuyer {
 
 **Методы класса:**  
 `setItems(items: IProduct[]) : void` — сохранение массива товаров, полученного в параметрах метода. Принимает массив всех товаров, заменяет текущее содержимое поля `items`.  
-После сохранения **эмитит событие** `products:changed` с payload `{ items: this.items }`, чтобы Презентер обновил отображение каталога на странице.
+После сохранения эмитит событие `products:changed` с payload `{ items: this.items }`, чтобы Презентер обновил отображение каталога на странице.
 
 `getItems(): IProduct[]` — возвращает текущий массив товаров из модели для отрисовки каталога.
 
@@ -281,15 +281,17 @@ validate → событие `formErrors:change` с { errors: BuyerValidationErro
 
 #### Класс ApiService
 
-`export class ApiService {}` - представитель коммуникационного слоя: отвечает за сетевые запросы к серверу (получение товаров, отправка заказов). Использует принцип композиции: не создаёт HTTP‑клиент внутри себя, а принимает через конструктор объект, соответствующий интерфейсу `IApi`. Это позволяет подменять реализацию (например, на мок для тестов).
+`export class ApiService {}`
 
-Конструктор класса:  
+- представитель коммуникационного слоя: отвечает за сетевые запросы к серверу (получение товаров, отправка заказов). Использует принцип композиции: не создаёт HTTP‑клиент внутри себя, а принимает через конструктор объект, соответствующий интерфейсу `IApi`. Это позволяет подменять реализацию (например, на мок для тестов).
+
+**Конструктор класса:**  
 `constructor(api: IApi)` - принимает объект, реализующий интерфейс `IApi`.
 
-Поля класса:  
+**Поля класса:**  
 `private api:  IApi` - хранит переданный экземпляр клиента, через который выполняются все сетевые запросы.
 
-Методы класса:  
+**Методы класса:**  
 `async getProducts(): Promise<IProductsResponse>` - выполняет GET-запрос на энпоинт /product/ с помощью метода `get` переданного api. Возвращает ответ от сервера в формате IProductsResponse (объект с массивом товаров).  
 `async sendOrder(order: IOrderRequest): Promise<IOrderResponse>` - отправляет POST-запрос на эндпоинт /order/ с помощью метода `post` переданного api. Передает объект заказа в формате IOrderRequest и возвращает ответ в формате IOrderResponse.
 
@@ -318,7 +320,7 @@ Component<T> (базовый класс)
    └─ ContactsForm - форма с email и телефоном
 ```
 
-#### Класс Header
+#### **Класс Header**
 
 `export class Header extends Component<IHeader>`
 
@@ -360,7 +362,7 @@ this.basketButton.addEventListener("click", () => {
 });
 ```
 
-#### Класс Gallery
+#### **Класс Gallery**
 
 `export class Gallery extends Component<IGalleryData>`
 
@@ -393,7 +395,7 @@ set catalog(items: HTMLElement[]) {
 
 НЕ генерирует событий (события генерируют вложенные в неё CardCatalog)
 
-#### Класс Modal
+#### **Класс Modal**
 
 `export class Modal extends Component<IModalData>`
 
@@ -467,7 +469,7 @@ render(data?: IModalData): HTMLElement {
 **События, которые генерирует:**  
 `modal:close` — при клике на кнопку закрытия (`.modal__close`) или клике вне модального окна (по оверлею .modal). Сигнал Презентеру о закрытии модального окна.
 
-#### Класс Basket
+#### **Класс Basket**
 
 `export class Basket extends Component<IBasketData>`
 
@@ -533,7 +535,7 @@ setCheckoutEnabled(enabled: boolean): void {
 
 События удаления товаров (basket:remove) генерирует вложенный в неё компонент CardBasket, а не сам Basket.
 
-#### Класс Success
+#### **Класс Success**
 
 `export class Success extends Component<ISuccessData>`
 
@@ -569,16 +571,7 @@ set total(value: number) {
 **События, которые генерирует:**  
 `success:close` — при клике на кнопку "За новыми покупками!".
 
-```ts
-// В конструкторе:
-this.closeButton.addEventListener("click", () => {
-  this.events.emit("success:close");
-});
-```
-
----
-
-#### Класс Card (абстрактный)
+#### **Класс Card** (абстрактный)
 
 `export abstract class Card extends Component<IProduct>`
 
@@ -627,7 +620,7 @@ set price(value: number | null): void {
 
 `render(data?: Partial<IProduct>): HTMLElement` — базовый метод (наследуется от Component). Через Object.assign копирует свойства data в this, вызывая сеттеры. Возвращает this.container. Переопределяется в наследниках для добавления специфичной логики.
 
-#### Класс CardCatalog
+#### **Класс CardCatalog**
 
 `export class CardCatalog extends Card`
 
@@ -694,7 +687,7 @@ render(data: Partial<IProduct>): HTMLElement {
 **События, которые генерирует:**  
 `product:open` — клик по карточке. В payload передаётся { id: string }. Сигнал Презентеру открыть модальное окно с детальным просмотром.
 
-#### Класс CardPreview
+#### **Класс CardPreview**
 
 `export class CardPreview extends Card`
 
@@ -803,7 +796,7 @@ render(data: Partial<IProduct>): HTMLElement {
 `product:add-to-cart` — при клике на "Купить". Payload: { id: string }  
 `product:remove-from-cart` — при клике на "Удалить из корзины". Payload: { id: string }
 
-#### Класс CardBasket
+#### **Класс CardBasket**
 
 `export class CardBasket extends Card`
 
@@ -852,21 +845,10 @@ render(data: Partial<IProduct>): HTMLElement {
 }
 ```
 
-Пример использования:
-
-```ts
-items.forEach((product, index) => {
-  const card = new CardBasket(container, events);
-  card.index = index + 1; // номер передаётся отдельно
-  card.render(product); // render() как у всех
-  basketList.appendChild(card.container);
-});
-```
-
 **События, которые генерирует:**  
 `basket:remove` — при клике на кнопку удаления. В payload передаётся { id: string }. Сигнал Презентеру удалить товар из корзины.
 
-#### Класс Form (абстрактный)
+#### **Класс Form** (абстрактный)
 
 `export abstract class Form extends Component<IFormState>`
 
@@ -950,7 +932,7 @@ render(state: IFormState): HTMLFormElement {
 `${this.formName}:change` — при вводе в любые поля input. Payload: { field: string, value: string }.
 `${this.formName}:submit` — при отправке формы (блокирует стандартную отправку e.preventDefault()).
 
-#### Класс OrderForm
+#### **Класс OrderForm**
 
 `export class OrderForm extends Form`
 
@@ -998,7 +980,7 @@ reset(): void {
 `order:payment:change` — при клике на кнопку оплаты. Payload: { target: 'card' | 'cash' }.  
 Наследует от Form: order:change, order:submit.
 
-#### Класс ContactsForm
+#### **Класс ContactsForm**
 
 `export class ContactsForm extends Form`
 
