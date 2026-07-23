@@ -202,8 +202,8 @@ export interface IBuyer {
 
 `getSelectedItem() : IProduct | null` — получение товара для подробного отображения. Возвращает выбранный товар или `null` — если ничего не выбрано.
 
-**Генерируемые события:**
-setItems → событие `products:changed` с { items: IProduct[] }
+**Генерируемые события:**  
+setItems → событие `products:changed` с { items: IProduct[] }  
 setSelectedItem → событие `product:selected` с { item: IProduct | null }
 
 #### Класс Cart (Корзина)
@@ -242,7 +242,7 @@ setSelectedItem → событие `product:selected` с { item: IProduct | null
 **Вспомогательные методы (private):**  
 `emitChange(): void` — приватный вспомогательный метод. Собирает актуальные данные о корзине (массив товаров, общую сумму, количество) и эмитит событие `cart:changed`. Вызывается из `addItem`, `removeItem` и `clear`, чтобы избежать дублирования кода.
 
-**Генерируемые события:**
+**Генерируемые события:**  
 addItem / removeItem / clear → событие `cart:changed` с { items: IProduct[], total: number, count: number }
 
 #### Класс Buyer (Покупатель)
@@ -267,13 +267,12 @@ addItem / removeItem / clear → событие `cart:changed` с { items: IProd
 `getData(): IBuyer` — получение всех данных покупателя. Возвращает полный объект данных покупателя в строгом формате `IBuyer`.
 
 `clear(): void` — очистка данных покупателя. Сбрасывает все данные покупателя в начальное состояние (используется после успешной отправки заказа).  
-После очистки эмитит событие `buyer:changed` с полем `payment` и пустым значением, чтобы Презентер обновил формы.
+После очистки эмитит событие `buyer:changed` чтобы Презентер обновил формы.
 
-`validate(): BuyerValidationErrors` — выполняет валидацию полей (поле валидно, если не пустое с учётом `trim()`). Метод создаёт и возвращает объект с ошибками вида `{ payment: 'Выберите тип оплаты', email: 'Введите email' }`, где ключи — названия полей `IBuyer`. Проверяет каждое поле на непустоту и формирует сообщения об ошибках по ключам интерфейса `IBuyer`. Возвращает пустой объект `{}` — если все поля валидны и ошибок нет.  
-После проверки эмитит событие `formErrors:change` с объектом ошибок и именем формы (`formName: 'order'`), чтобы Презентер отобразил сообщения под соответствующими полями формы.
+`validate(fields?: (keyof IBuyer)[]): BuyerValidationErrors` — выполняет валидацию переданных полей (или всех, если параметр не указан). Параметр fields — необязательный массив ключей IBuyer для проверки (например, ['payment', 'address']). Возвращает объект с ошибками вида { поле: 'текст ошибки' } или пустой объект {}, если ошибок нет. После проверки эмитит событие `formErrors:change`.
 
-**Генерируемые события:**
-setData / clear → событие `buyer:changed` с { field: keyof IBuyer, value: string }
+**Генерируемые события:**  
+setData / clear → событие `buyer:changed` с { field: keyof IBuyer, value: string }  
 validate → событие `formErrors:change` с { errors: BuyerValidationErrors, formName: string }
 
 ---
@@ -424,27 +423,23 @@ interface IModalData {
 
 **Поля класса:**  
 `private closeButton: HTMLButtonElement` - cсылка на кнопку закрытия (`.modal__close`).  
-`private contentArea: HTMLElement` — область для вставки контента (`.modal__content`).  
-`private isOpen: boolean = false` - внутренний флаг состояния окна. Используется для защиты от повторных вызовов open() / close(). Если окно уже открыто, повторный open() ничего не делает; аналогично с close().
+`private contentArea: HTMLElement` — область для вставки контента (`.modal__content`).
 
 **Методы класса:**  
-`open(): void {}` — делает модальное окно видимым (добавляет класс `modal_active`). Если окно уже открыто (isOpen === true), метод завершается без изменений.
+`open(): void {}` — делает модальное окно видимым (добавляет класс `modal_active`).
 
 ```ts
 open(): void {
-  if (this.isOpen) return;
   this.container.classList.add('modal_active');
-  this.isOpen = true;
 }
 ```
 
-`close(): void {}` — скрывает модальное окно (убирает класс `modal_active`). Если окно уже закрыто (isOpen === false), метод завершается без изменений.
+`close(): void {}` — скрывает модальное окно (убирает класс `modal_active`).
 
 ```ts
 close(): void {
-  if (!this.isOpen) return;
   this.container.classList.remove('modal_active');
-  this.isOpen = false;
+  this.contentArea.innerHTML = ''; // очищаем контент при закрытии
 }
 ```
 
@@ -588,14 +583,6 @@ this.closeButton.addEventListener("click", () => {
 `export abstract class Card extends Component<IProduct>`
 
 - Базовый класс для всех вариантов отображения товара (карточка в каталоге, детальная карточка, строка в корзине). Содержит общую логику поиска элементов (название, цена) и сеттеры для них.
-
-**Интерфейсы:**
-
-```ts
-interface ICardActions {
-  onClick?: (id: string) => void;
-}
-```
 
 **Конструктор класса:**  
 `constructor(container: HTMLElement, protected events: IEvents)`
@@ -939,6 +926,15 @@ set error(value: string) {
 }
 ```
 
+`reset(): void` - очищает все поля формы.
+
+```ts
+reset(): void {
+  const formElement = this.container as HTMLFormElement;
+  formElement.reset(); // стандартный метод HTMLFormElement — очищает все инпуты
+}
+```
+
 `render(state: IFormState): HTMLFormElement` - устанавливает состояние формы и возвращает this.container. (переопределен)
 
 ```ts
@@ -986,6 +982,15 @@ set payment(method: string) {
   this.paymentButtons.forEach(btn => {
     btn.classList.toggle('button_alt-active', btn.name === method);
   });
+}
+```
+
+`reset(): void` - переопределяем метод, очищает поля и сбрасывает подсветку кнопок
+
+```ts
+reset(): void {
+  super.reset();
+  this.payment = '';
 }
 ```
 
@@ -1111,11 +1116,6 @@ Payload: `{ item: IProduct | null }`
 Payload: `{ items: IProduct[], total: number, count: number }`  
 Действие Презентера: обновляет счётчик на иконке корзины, перерисовывает список товаров и общую стоимость в корзине.
 
-`buyer:changed`  
-Генерируется: **Buyer** — после вызова `setData()` или `clear()`  
-Payload: `{ field: keyof IBuyer, value: string }`  
-Действие Презентера: запускает валидацию изменённого поля и обновляет состояние формы.
-
 `formErrors:change`  
 Генерируется: **Buyer** — после вызова `validate()`  
 Payload: `{ errors: BuyerValidationErrors, formName: string }`  
@@ -1140,3 +1140,40 @@ Payload: `{ errors: BuyerValidationErrors, formName: string }`
 
 `modal:close` / `success:close` — Закрыть модальное окно.  
 Действие Презентера: закрывает модальное окно.
+
+### Презентер
+
+Презентер — центральный слой приложения, который связывает Модели и Представления. Он подписывается на события от обеих сторон и управляет логикой взаимодействия.
+
+#### Реализация
+
+Презентер реализован в файле `src/main.ts` — это основной скрипт приложения. Код Презентера не вынесен в отдельный класс: весь функционал умещается в одном файле, так как приложение состоит из одной страницы.
+
+#### Архитектура
+
+Инициализация приложения происходит в `main.ts` в следующем порядке:
+
+1. Создаются базовые зависимости: брокер событий, API
+2. Создаются модели данных (Products, Cart, Buyer)
+3. Создаются компоненты представления (Modal, Basket, формы, Success)
+4. Находятся корневые DOM-элементы страницы
+5. Настраиваются подписки на события (обработчики Презентера)
+6. Выполняется начальный запрос к серверу для загрузки каталога товаров
+
+#### Принципы
+
+- Презентер **не генерирует события** — он только подписывается и обрабатывает их
+- Генерация событий происходит в Моделях (при изменении данных) и в Представлениях (при действиях пользователя)
+- Представления перерисовываются только в двух случаях: при обработке события от модели об изменении данных, или при открытии модального окна
+- Вызов метода модели не означает немедленный ререндер — ререндер происходит только по событию
+
+#### Обработчики событий
+
+Основная логика Презентера — это набор обработчиков событий. Каждый обработчик:
+
+1. Получает данные из payload события
+2. Вызывает необходимые методы моделей для сохранения или получения данных
+3. Создаёт или обновляет компоненты представления
+4. Вызывает рендер и вставляет результат в DOM
+
+Полный список событий и их обработчиков описан в разделе «События приложения».

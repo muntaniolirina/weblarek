@@ -1,9 +1,15 @@
+import { CDN_URL } from '../../../utils/constants';
 import { IEvents } from '../../base/Events';
 import { IProduct } from '../../../types';
 import { Card } from './Card';
 import { ensureElement , setElementData} from '../../../utils/utils';
 import { categoryMap } from '../../../utils/constants';
 
+/**
+ * Детальная карточка товара — открывается в модальном окне при клике на карточку из каталога.
+ * Наследует базовую карточку (название, цена) и добавляет:
+ * изображение, категорию, описание, кнопку покупки/удаления.
+ */
 export class CardPreview extends Card {
   protected imageElement: HTMLImageElement;
   protected categoryElement: HTMLElement;
@@ -13,14 +19,17 @@ export class CardPreview extends Card {
   constructor(container: HTMLElement, protected events: IEvents) {
     super(container, events); // инициализация базового класса
 
-    // ищем специфичные поля для карточки
+    // Поиск DOM-элементов, специфичных для детальной карточки
     this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.container);
     this.categoryElement = ensureElement<HTMLElement>('.card__category', this.container);
     this.descriptionElement = ensureElement<HTMLParagraphElement>('.card__text', this.container);
     this.cardButton = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
-    // Слушатель вешается ОДИН раз в конструкторе
-     // При клике на кнопку читаем id и состояние из dataset (устанавливаются в render())
+    /**
+     * Слушатель клика на кнопку.
+     * По dataset определяет, в корзине ли товар, и генерирует соответствующее событие:
+     * product:add-to-cart или product:remove-from-cart.
+     */
     this.cardButton.addEventListener('click', () => {
       const id = this.container.dataset.productId;
       const buttonState = this.container.dataset.isInCart === 'true'; // состояние хранится только на DOM
@@ -33,14 +42,14 @@ export class CardPreview extends Card {
     })
   }
 
-  // устанавливаем изображение
+  /** Устанавливает изображение товара */
   set image(url: string) {
     if(this.imageElement) {
-      this.setImage(this.imageElement, url, 'Изображение товара');
+      this.setImage(this.imageElement,  CDN_URL + url, 'Изображение товара');
     }
   }
 
-  // устанавливаем категорию
+  /** Устанавливает категорию и соответствующий CSS-класс для цвета */
   set category(value: string) {
     if(this.categoryElement) {
       this.categoryElement.textContent = value;
@@ -56,7 +65,7 @@ export class CardPreview extends Card {
     }
   }
 
-  // устанавливаем описание
+  /** Устанавливает описание товара */
   set description(value: string) {
     if(this.descriptionElement) {
       this.descriptionElement.textContent = value;
@@ -64,9 +73,8 @@ export class CardPreview extends Card {
   }
 
    /**
-   * Обновляет состояние кнопки.
-   * Состояние (в корзине / не в корзине) сохраняется в dataset,
-   * а не в поле класса — данные хранятся только в Модели.
+   * Обновляет состояние и текст кнопки в зависимости от того, есть ли товар в корзине и указана ли цена.
+   * Состояние хранится на DOM-элементе (dataset), а не в поле класса.
    */
   updateButtonState(isInCart: boolean, price: number | null) : void {
     // Сохраняем состояние на DOM-элементе (для обработчика в конструкторе)
@@ -86,7 +94,10 @@ export class CardPreview extends Card {
     }
   }
 
-  // Render (только заполнение, без слушателей)
+  /**
+   * Заполняет карточку данными товара.
+   * Сохраняет id в data-атрибут и устанавливает начальное состояние кнопки.
+   */
   render(data: Partial<IProduct>): HTMLElement {
     if (data.title) this.title = data.title;
     if (data.price !== undefined) this.price = data.price;
@@ -94,7 +105,6 @@ export class CardPreview extends Card {
     if (data.category) this.category = data.category;
     if (data.description) this.description = data.description;
 
-    // сохраняем id в dataset - обработчик клика прочитает его
     setElementData(this.container, {productId: data.id});
 
     // начальное состояние кнопки (товар еще не в корзине)

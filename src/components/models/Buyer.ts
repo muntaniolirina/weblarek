@@ -74,47 +74,52 @@ export class Buyer {
     // Уведомляем Презентер, что данные очищены
     // field и value передаём просто для соблюдения формата события
     this.events.emit('buyer:changed', {
-      field: 'payment' as keyof IBuyer,
+      field: '',
       value: ''
     });
   }
 
   /**
    * Валидирует данные покупателя.
-   * Проверяет, что все поля непустые (с учётом trim — пробелы считаются пустотой).
+   * Проверяет указанные поля на непустоту (с учётом trim — пробелы считаются пустотой).
+   * Если параметр fields не передан — проверяются все поля.
    * Эмитит formErrors:change с объектом ошибок.
-   * 
+   *
+   * @param fields - необязательный массив ключей IBuyer для проверки (например, ['payment', 'address'])
    * @returns объект с ошибками. Если ошибок нет — возвращается пустой объект {}
-   */
-  validate(): BuyerValidationErrors {
+ */
+  validate(fields?: (keyof IBuyer)[]): BuyerValidationErrors {
     const errors: BuyerValidationErrors = {};
     const { payment, address, phone, email } = this.data;
 
+    // Если fields не передан — проверяем все поля
+    const fieldsToCheck = fields ?? ['payment', 'address', 'phone', 'email'];
+
     // Проверка: выбран ли способ оплаты
-    if (!payment?.trim()) {
-      errors.payment = 'Выберите тип оплаты';
+    if (fieldsToCheck.includes('payment') && !payment?.trim()) {
+      errors.payment = 'Необходимо выбрать тип оплаты';
     }
 
     // Проверка: введён ли адрес
-    if (!address?.trim()) {
-      errors.address = 'Укажите адрес';
+    if (fieldsToCheck.includes('address') && !address?.trim()) {
+      errors.address = 'Необходимо указать адрес';
     }
 
     // Проверка: введён ли телефон
-    if (!phone?.trim()) {
-      errors.phone = 'Укажите номер телефона';
+    if (fieldsToCheck.includes('phone') && !phone?.trim()) {
+      errors.phone = 'Необходимо указать телефона';
     }
 
     // Проверка: введён ли email
-    if (!email?.trim()) {
-      errors.email = 'Введите email';
+    if (fieldsToCheck.includes('email') && !email?.trim()) {
+      errors.email = 'Необходимо указать email';
     }
 
     // Уведомляем Презентер об ошибках валидации
     // Презентер покажет сообщения под соответствующими полями формы
     this.events.emit('formErrors:change', {
       errors,
-      formName: 'order'     // TODO: в Презентере уточнить имя формы ('order' или 'contacts')
+      formName: 'order'  // TODO: в Презентере уточнить имя формы ('order' или 'contacts')
     });
 
     return errors;

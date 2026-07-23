@@ -2,33 +2,37 @@ import { Component } from '../base/Component';
 import { IEvents } from '../base/Events';
 import { ensureElement } from '../../utils/utils';
 
-// Интерфейс данных, которые Header может принимать через render() / сеттеры
+/** Интерфейс данных, которые Header может принимать через render() / сеттеры */
 interface IHeaderData {
   counter: number; // количество товаров в корзине
 }
 
+/**
+ * Шапка страницы.
+ * Отображает счётчик товаров в корзине и кнопку открытия корзины.
+ * При клике на кнопку корзины генерирует событие 'basket:open'.
+ */
 export class Header extends Component<IHeaderData> {
-  // Ссылки на DOM-элементы внутри контейнера Header
   private counterElement: HTMLElement; // элемент со счётчиком
   private basketButton: HTMLButtonElement; // кнопка корзины
 
+  /**
+   * @param container - корневой DOM-элемент шапки
+   * @param events - брокер событий для коммуникации с Presenter'ом
+   */
   constructor(container: HTMLElement, protected events: IEvents) {
-    super(container); // передаём контейнер в базовый компонент
+    super(container);
 
-    // Ищем элементы ТОЛЬКО внутри переданного контейнера (this.container)
-    // ensureElement выбросит ошибку, если элемент не найден
     this.counterElement = ensureElement<HTMLElement>('.header__basket-counter', this.container);
     this.basketButton = ensureElement<HTMLButtonElement>('.header__basket', this.container);
 
-    // Один раз вешаем слушатель на кнопку корзины
-    // При клике генерируем событие 'basket:open' — его будет слушать Presenter
+    // Клик по кнопке корзины генерирует событие basket:open
     this.basketButton.addEventListener('click', () => {
       this.events.emit('basket:open');
     });
   }
 
-  // Сеттер для обновления счётчика товаров в корзине
-  // Presenter будет вызывать: header.counter = 5;
+  /** Обновляет значение счётчика товаров в корзине */
   set counter(value: number) {
     this.counterElement.textContent = String(value);
   }
